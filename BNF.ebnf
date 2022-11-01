@@ -1,0 +1,12 @@
+letter         ::=   "A" ... "Z" | "a" ... "z" ;
+digit           ::= "0" ... "9";
+number          ::=  ['-'] digit ['.' digit];
+expression      ::= term | term "+" expression | term "-" expression ;
+term            ::= factor | factor "*" term | factor "/" term ;
+factor          ::= base | base "^" exponent ;
+function_name   ::= letter | letter function_name
+function_arg    ::= range | expression
+function        ::= function_name "(" [ { function_arg "," } function_arg ] ")"
+
+base            ::= "(" expression ")" | number | function | reference | "+" base | "-" base ;
+exponent        ::= base ;
