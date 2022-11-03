@@ -1,9 +1,16 @@
 import SourcePosition from "./SourcePosition";
-import { SSSyntaxError } from "./Lexer";
+import { JumpSyntaxError } from "./Lexer";
 
 export default class Source {
-	protected index = 0;
+	protected _index = 0;
 	public readonly text: string;
+
+	/**
+	 * Returns the current index of the source.
+	 */
+	public get index() {
+		return this._index
+	}
 
 	constructor(text: string) {
 		this.text = text;
@@ -13,30 +20,28 @@ export default class Source {
 	 * If no next character exists, returns an empty string.
 	 */
 	public next(): string {
-		this.index ++;
-
-		if (this.index < this.text.length) {
-			throw new SSSyntaxError(
+		if (this._index >= this.text.length) {
+			throw new JumpSyntaxError(
 				"Unexpected end of file",
-				new SourcePosition(this.text, this.index)
+				new SourcePosition(this.text, this._index)
 			);
 		}
-		return this.text[this.index];
+		const c = this.text[this._index];
+		this._index ++;
+		return c;
 	}
 
 	/**
 	 * Returns the next character from the source without changing the current position.
 	 * @param offset - If provided, the ith character after the current one is returned.
-	 * `i` must be a positive or integer in range, and defaults to zero.
+	 * If `i` is out of range, an empty string will be returned.
 	 */
 	public peekNext(offset = 0): string {
-		if (this.index + offset >= this.text.length) {
-			throw new SSSyntaxError(
-				"Unexpected end of file",
-				new SourcePosition(this.text, this.index)
-			);
+		if (this._index + offset >= this.text.length) {
+			return ""
 		}
-		return this.text[this.index + offset];
+
+		return this.text[this._index + offset];
 	}
 
 	/**
@@ -45,16 +50,16 @@ export default class Source {
 	 */
 	public peekNextCharacters(len = 0): string {
 		if (len === 0) {
-			return this.text.substring(this.index);
+			return this.text.substring(this._index);
 		}
 
-		if (this.index + len >= this.text.length) {
-			throw new SSSyntaxError(
+		if (this._index + len >= this.text.length) {
+			throw new JumpSyntaxError(
 				"Unexpected end of file",
-				new SourcePosition(this.text, this.index)
+				new SourcePosition(this.text, this._index)
 			);
 		}
-		return this.text.substring(this.index, this.index + len);
+		return this.text.substring(this._index, this._index + len);
 	}
 
 	/**
@@ -67,8 +72,12 @@ export default class Source {
 	 */
 	public consumeUntil(endChars: string): string {
 		const consumed = this.consumeWhile((c) => !endChars.includes(c));
-		// consume the character that caused the predicate to fail
-		this.next();
+		// consume the character that caused the predicate to fail, unless
+		// we reached the end of the string already (and thus nothing caused
+		// this to throw).
+		if (this._index < this.text.length) {
+			this.next();
+		}
 		return consumed;
 	}
 
@@ -87,8 +96,9 @@ export default class Source {
 	 * @param predicate - A function returning true if a character passes the predicate.
 	 */
 	public consumeWhile(predicate: (c: string) => boolean): string {
+
 		let buffer = "";
-		while (predicate(this.peekNext())) {
+		while (this.hasNext() && predicate(this.peekNext())) {
 			buffer += this.next();
 		}
 		return buffer;
@@ -98,7 +108,17 @@ export default class Source {
 	 * Get a SourcePosition object corresponding to the `i`th character of the source,
 	 * or the current index if none is provided.
 	 */
-	public getPosition(i = this.index) {
+	public getPosition(i = this._index) {
 		return new SourcePosition(this.text, i);
 	}
+
+	/**
+	 * Returns true if the source has a next token (e.g. has not reached the end yet).
+	 */
+	public hasNext() {
+		return this._index < this.text.length
+	}
+
+
+
 }

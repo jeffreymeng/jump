@@ -9,7 +9,7 @@ export default class SourcePosition {
 	 */
 	constructor(protected readonly source: string, protected readonly index: number) {
 		if (index >= source.length) {
-			throw new Error("SourcePosition expected an index less than the length of source.")
+			this.index = this.source.length - 1
 		}
 	}
 

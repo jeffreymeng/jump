@@ -1,11 +1,11 @@
 export enum TOKEN_TYPE {
-	STRING = "string",
-	NUMBER = "number",
+	STRING_LITERAL = "string_literal",
+	INT_LITERAL = "int_literal",
+	DOUBLE_LITERAL = "double_literal",
 	OPERATOR = "operator",
 	IDENTIFIER = "identifier",
 	CONTROL = "control",
-	RANGE = "range",
-	REFERENCE = "reference",
+	KEYWORD = "keyword",
 }
 export default class Token {
 	/**
@@ -17,5 +17,9 @@ export default class Token {
 		public readonly type: TOKEN_TYPE,
 		public readonly symbol: string
 	) {}
+
+	public equals(other: Token) {
+		return this.type === other.type && this.symbol === other.symbol;
+	}
 }
 

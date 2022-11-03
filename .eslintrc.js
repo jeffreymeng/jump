@@ -18,5 +18,6 @@ module.exports = {
 	plugins: ["react", "@typescript-eslint"],
 	rules: {
 		"no-mixed-spaces-and-tabs": "off",
+		"no-constant-condition": ["warn", { "checkLoops": false }]
 	},
 };

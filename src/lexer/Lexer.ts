@@ -11,26 +11,23 @@ export class LexerError extends Error {
 
 	constructor(message: string, position: SourcePosition) {
 		super(message);
-		this.name = "Lexer Error";
 		this.position = position;
 	}
 }
 
 /**
- * "SheetsScript" syntax error -- so it's not the same as a native syntax error.
+ * An error in the syntax of the input.
  */
-export class SSSyntaxError extends Error {
+export class JumpSyntaxError extends Error {
 	public readonly position: SourcePosition;
 
 	constructor(message: string, position: SourcePosition) {
 		super(message);
-		this.name = "SSSyntax Error";
 		this.position = position;
 	}
 }
 
-
-export default class Lexer implements Iterator<Token> {
+export default class Lexer implements IterableIterator<Token> {
 	/**
 	 * The source code of the lexer.
 	 */
@@ -50,57 +47,130 @@ export default class Lexer implements Iterator<Token> {
 		this.source = source;
 	}
 
+	// TODO: this could be optimized by checking with ascii values.
 	public static readonly DIGITS = "0123456789";
+	public static readonly LOWERCASE_LETTERS = "abcdefghijklmnopqrstuvwxyz";
+	public static readonly UPPERCASE_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-
+	// TODO: this might be more optimized with a trie
+	public static readonly KEYWORDS = ["for", "in"];
 
 	/**
 	 * Consumes the next token, and returns it.
 	 */
 	public nextToken(): Token {
-		const c = this.source.next();
+		const source = this.source;
+		const c = source.next();
 		this.setTokenIndex();
 
 		if ("\"'".includes(c)) {
 			// consume until we see the same type of quote again
-			const buffer = this.source.consumeUntil(c);
-			return new Token(TOKEN_TYPE.STRING, buffer);
-		} else if (Lexer.DIGITS.includes(c)) {
-			let buffer = c + this.source.consumeAll(Lexer.DIGITS);
-			// if the next character is a dot, then this is part of a float, so keep going.
-			if (this.source.peekNext() === ".") {
-				buffer += this.source.next() + this.source.consumeAll(Lexer.DIGITS);
+			const buffer = source.consumeUntil(c);
+			return new Token(TOKEN_TYPE.STRING_LITERAL, buffer);
+		}
+		if (Lexer.DIGITS.includes(c)) {
+			let buffer = c + source.consumeAll(Lexer.DIGITS);
+			// if the next character is a dot, then this is part of a double.
+			// otherwise, return the int
+			if (source.peekNext() !== ".") {
+				return new Token(TOKEN_TYPE.INT_LITERAL, buffer);
+			} else {
+				buffer += this.source.next() + source.consumeAll(Lexer.DIGITS);
+				return new Token(TOKEN_TYPE.DOUBLE_LITERAL, buffer);
 			}
-			return new Token(TOKEN_TYPE.NUMBER, buffer);
-		} else if (c === "\n") {
-			return new Token(TOKEN_TYPE.CONTROL, "\n");
-		} else if (/[ \t]/g.test(c)) {
-			// skip any spaces and tabs.
+		}
+		if ("+-*/%".includes(c)) {
+			let op = c;
+
+			if (source.peekNext() === "*") {
+				op = c + source.next();
+			}
+
+			// check for math assignment operators (+=, *=, **=, %=, etc.)
+			if (source.peekNext() === "=") {
+				source.next();
+				return new Token(TOKEN_TYPE.OPERATOR, op + "=");
+			}
+
+			// check for inc/dec (++/--) (these can't be assignment operators)
+			if ("+-".includes(c) && source.peekNext() === c) {
+				op = c + source.next();
+			}
+
+			// return a basic operator
+			return new Token(TOKEN_TYPE.OPERATOR, op);
+		}
+
+		// parentheses can technically be considered both operators and control flow characters.
+		// . is an operator outside of number literals.
+		if ("[]().<>!=,&|".includes(c)) {
+			// == and => (function arrow) operators
+			if (c === "=" && "=>".includes(source.peekNext())) {
+				return new Token(TOKEN_TYPE.OPERATOR, c + source.next());
+			}
+
+			// logical operators that can be modified with the equal sign
+			if ("<>!".includes(c) && source.peekNext() === "=") {
+				return new Token(TOKEN_TYPE.OPERATOR, c + source.next());
+			}
+
+			// && and || operators
+			if ("&|".includes(c) && source.peekNext() === c) {
+				return new Token(TOKEN_TYPE.OPERATOR, c + source.next());
+			}
+
+			return new Token(TOKEN_TYPE.OPERATOR, c);
+		}
+		if ("\n;{}".includes(c)) {
+			return new Token(TOKEN_TYPE.CONTROL, c);
+		}
+		if (
+			("$_" + Lexer.UPPERCASE_LETTERS + Lexer.LOWERCASE_LETTERS).includes(
+				c
+			)
+		) {
+			const buffer =
+				c +
+				source.consumeAll(
+					"$_" +
+						Lexer.DIGITS +
+						Lexer.UPPERCASE_LETTERS +
+						Lexer.LOWERCASE_LETTERS
+				);
+
+			if (Lexer.KEYWORDS.includes(buffer)) {
+				return new Token(TOKEN_TYPE.KEYWORD, buffer);
+			}
+			return new Token(TOKEN_TYPE.IDENTIFIER, buffer);
+		}
+		if (/\s/g.test(c)) {
+			// skip any spaces and tabs, and other whitespace (except newlines,
+			// which are parsed above).
 			return this.nextToken();
 		}
 
-		throw new SSSyntaxError(
+		throw new JumpSyntaxError(
 			`Unexpected character '${c}'.`,
-			this.source.getPosition()
+			source.getPosition()
 		);
 	}
 
 	public hasNextToken(): boolean {
-		// if there are only whitespace characters (including newlines)
-		// then we can
-		return !/[\s\n]*/g.test(this.source.peekNext());
+		// if there are only whitespace characters (including trailing newlines)
+		// then we can return.
+		return !/^[\s\n]*$/g.test(this.source.peekNextCharacters());
 	}
 
 	public next(): IteratorResult<Token> {
 		if (!this.hasNextToken()) {
 			return {
-				value: null,
-				done: true
-			}
+				value: undefined,
+				done: true,
+			};
 		}
 		return {
 			value: this.nextToken(),
-			done: this.hasNextToken(),
+			done: false,
 		};
 	}
 
@@ -109,5 +179,9 @@ export default class Lexer implements Iterator<Token> {
 	 */
 	protected setTokenIndex() {
 		this.currentTokenIndex = this.index;
+	}
+
+	public [Symbol.iterator]() {
+		return this;
 	}
 }
