@@ -2,18 +2,6 @@ import Token, { TOKEN_TYPE } from "./Token";
 import SourcePosition from "./SourcePosition";
 import Source from "./Source";
 
-/**
- * An error that occurred while lexing, typically not due to the input but due to
- * an implementation bug.
- */
-export class LexerError extends Error {
-	public readonly position: SourcePosition;
-
-	constructor(message: string, position: SourcePosition) {
-		super(message);
-		this.position = position;
-	}
-}
 
 /**
  * An error in the syntax of the input.
@@ -65,14 +53,21 @@ export default class Lexer implements IterableIterator<Token> {
 
 		if ("\"'".includes(c)) {
 			// consume until we see the same type of quote again
-			const buffer = source.consumeUntil(c);
+			const buffer = source.consumeUntil(c, "Expected string to be closed.");
 			return new Token(TOKEN_TYPE.STRING_LITERAL, buffer);
 		}
 		if (Lexer.DIGITS.includes(c)) {
 			let buffer = c + source.consumeAll(Lexer.DIGITS);
 			// if the next character is a dot, then this is part of a double.
 			// otherwise, return the int
-			if (source.peekNext() !== ".") {
+			if (
+				// make sure the next character isn't a dot, or if it is a dot
+				// that it's not followed by a number (which would make it not
+				// a double).
+				source.peekNext() !== "." ||
+				// split it so the empty string doesn't trigger this condition
+				!Lexer.DIGITS.split("").includes(this.source.peekNext(1))
+			) {
 				return new Token(TOKEN_TYPE.INT_LITERAL, buffer);
 			} else {
 				buffer += this.source.next() + source.consumeAll(Lexer.DIGITS);

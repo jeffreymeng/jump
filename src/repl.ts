@@ -1,6 +1,6 @@
-import Token, { TOKEN_TYPE } from "./Token";
-import Lexer from "./Lexer";
-import Source from "./Source";
+import Token, { TOKEN_TYPE } from "./lexer/Token";
+import Lexer from "./lexer/Lexer";
+import Source from "./lexer/Source";
 import * as readline from "readline";
 
 // const s = `"hello" 2 0.2 42.294 "23.1"`;

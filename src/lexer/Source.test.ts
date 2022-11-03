@@ -1,6 +1,7 @@
 import { describe, test, expect } from "@jest/globals";
 
 import Source from "./Source";
+import SourcePosition from "./SourcePosition";
 
 describe("Source", () => {
 	test("next & peeking functions", () => {
@@ -14,7 +15,32 @@ describe("Source", () => {
 		expect(s.next()).toBe("d");
 		expect(s.peekNextCharacters(3)).toBe("efg");
 		expect(s.peekNextCharacters(4)).toBe("efgh");
+		expect(() => s.peekNextCharacters(10)).toThrowErrorMatchingSnapshot();
 		expect(s.peekNextCharacters()).toBe("efghijk");
+		expect(() => s.peekNextCharacters("efghijk".length + 1)).toThrowErrorMatchingSnapshot();
+	});
+
+	test("peekNext returns empty string once source is over", () => {
+		const s = new Source("a");
+		expect(s.peekNext()).toBe("a");
+		s.next();
+		expect(s.peekNext()).toBe("");
+	});
+
+	test("getPosition", () => {
+		const s = new Source(`aaaabb333`);
+		s.consumeAll("a");
+		expect(s.getPosition()).toStrictEqual(
+			new SourcePosition("aaaabb333", 4)
+		);
+		s.consumeAll("b");
+		expect(s.getPosition()).toStrictEqual(
+			new SourcePosition("aaaabb333", 6)
+		);
+		s.consumeAll("3");
+		expect(s.getPosition()).toStrictEqual(
+			new SourcePosition("aaaabb333", 9)
+		);
 	});
 
 	test("consumeAll", () => {
@@ -24,7 +50,7 @@ describe("Source", () => {
 		expect(s.peekNextCharacters()).toBe("333");
 		expect(s.consumeAll("3")).toBe("333");
 		expect(s.index).toBe(9);
-		expect(() => s.next()).toThrowError();
+		expect(() => s.next()).toThrowErrorMatchingSnapshot();
 	});
 
 	test("consumeUntil", () => {
@@ -35,10 +61,10 @@ describe("Source", () => {
 		expect(s2.consumeUntil("3")).toBe("aaaabb");
 		// it should have also consumed a 3
 		expect(s2.peekNextCharacters()).toBe("44");
-		expect(s2.consumeUntil("a")).toBe("44");
-		expect(s2.index).toBe(s2.text.length);
-		expect(() => s2.next()).toThrowError();
+		expect(s2.index).toBe(s2.text.length - 2);
+		expect(() => s2.consumeUntil("a")).toThrowErrorMatchingSnapshot();
 	});
+
 	test("consumeWhile", () => {
 		const s = new Source(`aaaabb333`);
 		expect(s.consumeWhile((c) => c === "a" || c === "b")).toBe("aaaabb");
@@ -49,8 +75,6 @@ describe("Source", () => {
 		expect(s2.peekNextCharacters()).toBe("333");
 		expect(s2.consumeWhile(() => true)).toBe("333");
 		expect(s2.index).toBe(s.text.length);
-		expect(() => s2.next()).toThrowError();
+		expect(() => s2.next()).toThrowErrorMatchingSnapshot();
 	});
-
-
 });

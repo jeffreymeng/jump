@@ -17,8 +17,9 @@ describe("Lexer", () => {
 	const nl = () => ctrl("\n");
 	// lexes the string and returns an array of tokens.
 	const lexToArray = (s: string) => [...new Lexer(new Source(s))];
+
 	test("Basic Lexing", () => {
-		expect(lexToArray(`"hello" 2 0.2 42.294 "23.1"`)).toEqual([
+		expect(lexToArray(`"hello" 2 0.2 42.294 "23.1"`)).toStrictEqual([
 			str("hello"),
 			int("2"),
 			t(TOKEN_TYPE.DOUBLE_LITERAL)("0.2"),
@@ -28,7 +29,9 @@ describe("Lexer", () => {
 	});
 
 	test("Operators", () => {
-		expect(lexToArray(`i ++ i *= 5 ** 5 i **= 5 i && x i <= x i || y`)).toEqual([
+		expect(
+			lexToArray(`i ++ i *= 5 ** 5 i **= 5 i && x i <= x i || y !=`)
+		).toStrictEqual([
 			id("i"),
 			op("++"),
 			id("i"),
@@ -47,9 +50,10 @@ describe("Lexer", () => {
 			id("x"),
 			id("i"),
 			op("||"),
-			id("y")
-		])
-	})
+			id("y"),
+			op("!="),
+		]);
+	});
 
 	test("Example", () => {
 		const s = `
@@ -105,10 +109,28 @@ for (i in nums.filter(n => n % 2 == 0)) {
 			// the lexer does not pass trailing newlines.
 		].flat();
 
-		expect(lexToArray(s)).toEqual(expected);
+		expect(lexToArray(s)).toStrictEqual(expected);
 	});
 
-	// test("Error cases", () => {
-	// 	expect(lexToArray(``))
-	// })
+	test("Literals", () => {
+		expect(lexToArray(`123.`)).toStrictEqual([int("123"), op(".")]);
+		expect(() => lexToArray(`"hello'`)).toThrowErrorMatchingSnapshot();
+		expect(() => lexToArray(`'`)).toThrowErrorMatchingSnapshot();
+		expect(lexToArray(`""'''"'`)).toStrictEqual([
+			str(""),
+			str(""),
+			str(`"`),
+		]);
+		expect(() => lexToArray(`"'"'`)).toThrowErrorMatchingSnapshot("");
+		expect(lexToArray(`8h4i4()`)).toStrictEqual([
+			int("8"),
+			id("h4i4"),
+			op("("),
+			op(")"),
+		]);
+	});
+
+	test("Error cases", () => {
+		expect(() => new Lexer(new Source("•")).next()).toThrowErrorMatchingSnapshot();
+	});
 });

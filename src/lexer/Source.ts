@@ -9,12 +9,13 @@ export default class Source {
 	 * Returns the current index of the source.
 	 */
 	public get index() {
-		return this._index
+		return this._index;
 	}
 
 	constructor(text: string) {
 		this.text = text;
 	}
+
 	/**
 	 * Returns the next character from the source, updating the line and position as necessary.
 	 * If no next character exists, returns an empty string.
@@ -22,12 +23,12 @@ export default class Source {
 	public next(): string {
 		if (this._index >= this.text.length) {
 			throw new JumpSyntaxError(
-				"Unexpected end of file",
+				"Unexpected end of input.",
 				new SourcePosition(this.text, this._index)
 			);
 		}
 		const c = this.text[this._index];
-		this._index ++;
+		this._index++;
 		return c;
 	}
 
@@ -38,7 +39,7 @@ export default class Source {
 	 */
 	public peekNext(offset = 0): string {
 		if (this._index + offset >= this.text.length) {
-			return ""
+			return "";
 		}
 
 		return this.text[this._index + offset];
@@ -66,17 +67,28 @@ export default class Source {
 	 * Consumes characters until any character inside endChars is found.
 	 * The end character is consumed, but only the characters from
 	 * the current position (inclusive) to the last character before
-	 * the end character are returned.
+	 * the end character are returned. The string must eventually contain
+	 * one of the endChars.
 	 * @param endChars - A string containing one or more characters that will cause consumeUntil()
 	 *  to stop consuming characters.
+	 * @param errorMessageIfNotFound - If the string does not eventually contain
+	 * an endChar, then this message will be used instead of the default error message.
 	 */
-	public consumeUntil(endChars: string): string {
+	public consumeUntil(
+		endChars: string,
+		errorMessageIfNotFound = "Unexpected end of input."
+	): string {
 		const consumed = this.consumeWhile((c) => !endChars.includes(c));
 		// consume the character that caused the predicate to fail, unless
 		// we reached the end of the string already (and thus nothing caused
-		// this to throw).
+		// this to throw), which would cause an error.
 		if (this._index < this.text.length) {
 			this.next();
+		} else {
+			throw new JumpSyntaxError(
+				errorMessageIfNotFound,
+				this.getPosition()
+			);
 		}
 		return consumed;
 	}
@@ -96,7 +108,6 @@ export default class Source {
 	 * @param predicate - A function returning true if a character passes the predicate.
 	 */
 	public consumeWhile(predicate: (c: string) => boolean): string {
-
 		let buffer = "";
 		while (this.hasNext() && predicate(this.peekNext())) {
 			buffer += this.next();
@@ -116,9 +127,6 @@ export default class Source {
 	 * Returns true if the source has a next token (e.g. has not reached the end yet).
 	 */
 	public hasNext() {
-		return this._index < this.text.length
+		return this._index < this.text.length;
 	}
-
-
-
 }
