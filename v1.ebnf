@@ -9,9 +9,9 @@ factor          ::= base | base "**" base ;
 function_call   ::= base "()"
 base            ::= "(" expression ")" | number | "+" base | "-" base ;
 
-typeModifier    ::= "[]"
+type_modifier    ::= "[]"
 primitive       ::= "int" | "double" | "num"
-type            ::= primitive | primitive type_modifier
+type            ::= primitive | primitive [type_modifier]
 
 assignment      ::= type identifier = expression;
 statement       ::= expression | assignment;

@@ -1,4 +1,4 @@
-letter         ::=   "A" ... "Z" | "a" ... "z" ;
+letter          ::=   "A" ... "Z" | "a" ... "z" ;
 digit           ::= "0" ... "9";
 number          ::=  ['-'] digit ['.' digit];
 expression      ::= term | term "+" expression | term "-" expression ;

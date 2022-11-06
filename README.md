@@ -42,6 +42,10 @@ void add(int x, int y = 0, {int base = 10}) {
 
 ```
 
+### Todo
+- Stage 1
+- A variable cannot be updated if it is declared later in the same scope, even if it is also declared in an outer scope.
+
 ### Future features being considered
 - Pipe operator (.>) e.g. `arr.filter().>mycustomfunction(#)` 
   - If the # is present, it will be replaced with the previous value (this can be done multiple times)

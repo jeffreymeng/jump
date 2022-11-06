@@ -32,3 +32,11 @@ describe("getCol()", () => {
 		expect(new SourcePosition(basicSource, 27).getCol()).toBe(12);
 	});
 });
+
+describe("toString()", () => {
+	const basicSource = `let x = 23 + 12\nreturn 1 + x`;
+	test("Basic Cases", () => {
+		expect(new SourcePosition(basicSource, 5).toString()).toBe("L1:6");
+		expect(new SourcePosition(basicSource, 18).toString()).toBe("L2:3");
+	});
+});

@@ -7,9 +7,12 @@ export default class SourcePosition {
 	 * @param source - The text of the source code.
 	 * @param index - The index of the character within the source text.
 	 */
-	constructor(protected readonly source: string, protected readonly index: number) {
+	constructor(
+		protected readonly source: string,
+		protected readonly index: number
+	) {
 		if (index >= source.length) {
-			this.index = this.source.length - 1
+			this.index = this.source.length - 1;
 		}
 	}
 
@@ -17,7 +20,7 @@ export default class SourcePosition {
 	 * Returns the line of the index in the given source text. Lines are 1-indexed.
 	 */
 	public getLine(): number {
-		return this.source.substring(0, this.index).split("\n").length
+		return this.source.substring(0, this.index).split("\n").length;
 	}
 
 	/**
@@ -31,4 +34,7 @@ export default class SourcePosition {
 		return this.index - this.source.lastIndexOf("\n", this.index - 1);
 	}
 
+	public toString(): string {
+		return `L${this.getLine()}:${this.getCol()}`;
+	}
 }
