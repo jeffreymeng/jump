@@ -17,6 +17,13 @@ export default class Source {
 	}
 
 	/**
+	 * Returns a new source with the index reset.
+	 */
+	public clone(): Source {
+		return new Source(this.text);
+	}
+
+	/**
 	 * Returns the next character from the source, updating the line and position as necessary.
 	 * If no next character exists, returns an empty string.
 	 */

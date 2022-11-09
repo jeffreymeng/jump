@@ -18,8 +18,24 @@ export default class Token {
 		public readonly symbol: string
 	) {}
 
+	/**
+	 * Returns whether or not the token matches another token, in terms of content.
+	 * @param other
+	 */
 	public equals(other: Token) {
 		return this.type === other.type && this.symbol === other.symbol;
 	}
-}
 
+	/**
+	 * Returns whether or not the token matches the provided type and symbol.
+	 * @param type
+	 * @param symbol
+	 */
+	public is(type: TOKEN_TYPE, symbol: string) {
+		return this.type === type && this.symbol === symbol;
+	}
+
+	public toString() {
+		return `Token<${this.type}, '${this.symbol}'>`;
+	}
+}

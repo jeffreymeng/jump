@@ -2,7 +2,6 @@ import Token, { TOKEN_TYPE } from "./Token";
 import SourcePosition from "./SourcePosition";
 import Source from "./Source";
 
-
 /**
  * An error in the syntax of the input.
  */
@@ -44,6 +43,13 @@ export default class Lexer implements IterableIterator<Token> {
 	public static readonly KEYWORDS = ["for", "in"];
 
 	/**
+	 * Returns a new lexer on the same source text but with any internal state reset.
+	 */
+	public clone(): Lexer {
+		return new Lexer(this.source.clone());
+	}
+
+	/**
 	 * Consumes the next token, and returns it.
 	 */
 	public nextToken(): Token {
@@ -53,7 +59,10 @@ export default class Lexer implements IterableIterator<Token> {
 
 		if ("\"'".includes(c)) {
 			// consume until we see the same type of quote again
-			const buffer = source.consumeUntil(c, "Expected string to be closed.");
+			const buffer = source.consumeUntil(
+				c,
+				"Expected string to be closed."
+			);
 			return new Token(TOKEN_TYPE.STRING_LITERAL, buffer);
 		}
 		if (Lexer.DIGITS.includes(c)) {
@@ -156,10 +165,10 @@ export default class Lexer implements IterableIterator<Token> {
 		return !/^[\s\n]*$/g.test(this.source.peekNextCharacters());
 	}
 
-	public next(): IteratorResult<Token> {
+	public next(): IteratorResult<Token, null> {
 		if (!this.hasNextToken()) {
 			return {
-				value: undefined,
+				value: null,
 				done: true,
 			};
 		}
@@ -169,14 +178,18 @@ export default class Lexer implements IterableIterator<Token> {
 		};
 	}
 
+	public getPosition(): SourcePosition {
+		return this.source.getPosition();
+	}
+
 	/**
 	 * Set the current token position to the lexer's next character's position
 	 */
-	protected setTokenIndex() {
+	protected setTokenIndex(): void {
 		this.currentTokenIndex = this.index;
 	}
 
-	public [Symbol.iterator]() {
+	public [Symbol.iterator](): IterableIterator<Token> {
 		return this;
 	}
 }
