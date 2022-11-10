@@ -13,7 +13,6 @@ import * as util from "util";
 // 	new Token(TOKEN_TYPE.STRING_LITERAL, "23.1")
 // ]
 
-function drawTree() {}
 
 async function repl() {
 	const rl = readline.createInterface({

@@ -8,7 +8,7 @@
 		"format": "prettier --write .",
 		"lint": "eslint --ext .jsx --ext .js --ext .ts --ext .tsx --cache .",
 		"repl": "ts-node src/repl.ts",
-		"build-repl": "tsc src/repl.ts"
+		"build:repl": "tsc -p tsconfig.json"
 	},
 	"repository": {
 		"type": "git",

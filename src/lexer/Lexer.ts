@@ -165,6 +165,7 @@ export default class Lexer implements IterableIterator<Token> {
 		return !/^[\s\n]*$/g.test(this.source.peekNextCharacters());
 	}
 
+	// TODO: change this to generator *next() while (this.has) return so we don't have to do value stuff ourselves.
 	public next(): IteratorResult<Token, null> {
 		if (!this.hasNextToken()) {
 			return {

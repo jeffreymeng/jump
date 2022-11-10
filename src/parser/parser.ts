@@ -1,8 +1,18 @@
 import Lexer, { JumpSyntaxError } from "../lexer/Lexer";
 import Token, { TOKEN_TYPE } from "../lexer/Token";
-import { BinaryOperatorNode, UnaryOperatorNode } from "../ast/nodes/OperatorNode";
+import {
+	BinaryOperatorNode,
+	UnaryOperatorNode,
+} from "../ast/nodes/OperatorNode";
 import ASTNode from "../ast/nodes/ASTNode";
 import { DoubleNode, IntNode } from "../ast/nodes/LiteralNodes";
+import SourcePosition from "../lexer/SourcePosition";
+import {
+	Identifier,
+	TypeIdentifier,
+	VariableAssignmentNode,
+	VariableDeclarationNode,
+} from "../ast/nodes/IdentifierNodes";
 
 const ERROR_MESSAGES = {
 	END_OF_INPUT: "Unexpected end of input.",
@@ -11,12 +21,23 @@ const ERROR_MESSAGES = {
 export default class Parser {
 	protected lexer: Lexer;
 	protected peekedToken: Token | null = null;
+	protected position: SourcePosition;
+
 	constructor(lexer: Lexer) {
 		this.lexer = lexer;
+		this.position = lexer.getPosition();
 	}
 
-	public getRoot() {
-		return this.getStatement();
+	public getRoot(): ASTNode<any> {
+		const statement = this.getStatement();
+		if (this.hasNext()) {
+			const next = this.next();
+			throw new JumpSyntaxError(
+				`Unexpected ${next.type} token '${next.symbol}'`,
+				this.lexer.getPosition()
+			);
+		}
+		return statement;
 	}
 
 	protected getStatement() {
@@ -29,7 +50,11 @@ export default class Parser {
 		const left = this.getTerm();
 
 		if (this.peekMatches(TOKEN_TYPE.OPERATOR, ["+", "-"])) {
-			return new BinaryOperatorNode(left, this.next(), this.getTerm());
+			return new BinaryOperatorNode(
+				left,
+				this.next(),
+				this.getExpression()
+			);
 		}
 		return left;
 	}
@@ -37,8 +62,8 @@ export default class Parser {
 	// term ::= factor | factor "*" term | factor "/" term ;
 	protected getTerm(): ASTNode<any> {
 		const left = this.getFactor();
-		if (this.peekMatches(TOKEN_TYPE.OPERATOR, ["*", "/"])) {
-			return new BinaryOperatorNode(left, this.next(), this.getFactor());
+		if (this.peekMatches(TOKEN_TYPE.OPERATOR, ["*", "/", "%"])) {
+			return new BinaryOperatorNode(left, this.next(), this.getTerm());
 		}
 		return left;
 	}
@@ -47,7 +72,7 @@ export default class Parser {
 	protected getFactor(): ASTNode<any> {
 		const left = this.getBase();
 		if (this.peekMatches(TOKEN_TYPE.OPERATOR, "**")) {
-			return new BinaryOperatorNode(left, this.next(), this.getBase());
+			return new BinaryOperatorNode(left, this.next(), this.getFactor());
 		}
 		return left;
 	}
@@ -57,7 +82,6 @@ export default class Parser {
 		if (this.peekMatches(TOKEN_TYPE.OPERATOR, "(")) {
 			this.next(TOKEN_TYPE.OPERATOR, "(");
 			const exp = this.getExpression();
-			console.log("EXP", exp)
 			this.next(TOKEN_TYPE.OPERATOR, ")");
 			return exp;
 		} else if (this.peekMatches(TOKEN_TYPE.OPERATOR, ["+", "-"])) {
@@ -98,6 +122,14 @@ export default class Parser {
 	protected next(): Token;
 
 	/**
+	 * Consumes and returns the next token from the parser's lexer. If the type of the token doesn't
+	 * match the provided type, an error will be thrown.
+	 * @param assertType - The expected type of the token.
+	 * @protected
+	 */
+	protected next(assertType: TOKEN_TYPE): Token;
+
+	/**
 	 * Consumes and returns the next token from the parser's lexer. If the type and symbol of the token doesn't
 	 * match the provided arguments, an error will be thrown.
 	 * @param assertType - The expected type of the token.
@@ -109,8 +141,8 @@ export default class Parser {
 	protected next(assertType?: TOKEN_TYPE, assertSymbol?: string): Token {
 		if (
 			assertType &&
-			assertSymbol &&
-			!this.peekMatches(assertType, assertSymbol)
+			(!this.peekMatches(assertType) ||
+				(assertSymbol && !this.peekMatches(assertType, assertSymbol)))
 		) {
 			if (!this.peek()) {
 				throw new JumpSyntaxError(
@@ -119,10 +151,10 @@ export default class Parser {
 				);
 			}
 			throw new JumpSyntaxError(
-				`Expected a '${assertSymbol}' ${assertType} token, but got a '${this.peek()!.symbol}' ${
-					this.peek()!.type
-				} token.`,
-				this.lexer.getPosition()
+				`Expected a '${assertSymbol}' ${assertType} token, but got a '${
+					this.peek()!.symbol
+				}' ${this.peek()!.type} token.`,
+				this.position
 			);
 		}
 		if (this.peekedToken) {
@@ -131,10 +163,11 @@ export default class Parser {
 			return peeked;
 		}
 		const next = this.lexer.next().value;
+		this.position = this.lexer.getPosition();
 		if (!next) {
 			throw new JumpSyntaxError(
 				ERROR_MESSAGES.END_OF_INPUT,
-				this.lexer.getPosition()
+				this.position
 			);
 		}
 		return next;
@@ -148,7 +181,8 @@ export default class Parser {
 		if (this.peekedToken) {
 			return this.peekedToken;
 		}
-		this.peekedToken = this.lexer.next().value;
+
+		this.peekedToken = this.next();
 		return this.peekedToken;
 	}
 
