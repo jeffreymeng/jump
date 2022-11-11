@@ -1,7 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Lexer Error cases 1`] = `"Unexpected character '•'."`;
-
 exports[`Lexer Literals 1`] = `"Expected string to be closed."`;
 
 exports[`Lexer Literals 2`] = `"Expected string to be closed."`;

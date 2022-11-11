@@ -1,7 +1,7 @@
 import { describe, test, expect } from "@jest/globals";
 
-import Source from "./Source";
-import SourcePosition from "./SourcePosition";
+import Source from "../Source";
+import SourcePosition from "../SourcePosition";
 
 describe("Source", () => {
 	test("next & peeking functions", () => {

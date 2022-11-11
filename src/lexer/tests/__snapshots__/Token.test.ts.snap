@@ -1,0 +1,7 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Token toString 1`] = `"Token<operator, '+'>"`;
+
+exports[`Token toString 2`] = `"Token<int_literal, '5'>"`;
+
+exports[`Token toString 3`] = `"Token<int_literal, '5'>"`;

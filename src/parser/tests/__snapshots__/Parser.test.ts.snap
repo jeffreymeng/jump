@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Internal next/peek/peekMatches Next Error Cases 1`] = `"Expected a '1' int_literal token, but got a '2' int_literal token."`;
+
+exports[`Internal next/peek/peekMatches Next Error Cases 2`] = `"Unexpected end of input."`;

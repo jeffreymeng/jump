@@ -1,5 +1,5 @@
 import { describe, test, expect } from "@jest/globals";
-import SourcePosition from "./SourcePosition";
+import SourcePosition from "../SourcePosition";
 
 describe("getLine()", () => {
 	const basicSource = `let x = 23 + 12\nreturn 1 + x`;

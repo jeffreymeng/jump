@@ -1,5 +1,5 @@
 {
-	"name": "sheetsscript",
+	"name": "jump",
 	"version": "1.0.0",
 	"description": "",
 	"main": "index.js",
@@ -12,16 +12,15 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/jeffreymeng/sheets-script.git"
+		"url": "git+https://github.com/jeffreymeng/jump.git"
 	},
-	"author": "",
+	"author": "Jeffrey Meng <jeffkmeng@gmail.com>",
 	"license": "MIT",
 	"bugs": {
-		"url": "https://github.com/jeffreymeng/sheets-script/issues"
+		"url": "https://github.com/jeffreymeng/jump/issues"
 	},
-	"homepage": "https://github.com/jeffreymeng/sheets-script#readme",
+	"homepage": "https://github.com/jeffreymeng/jump#readme",
 	"dependencies": {
-
 		"typescript": "^4.8.4"
 	},
 	"devDependencies": {

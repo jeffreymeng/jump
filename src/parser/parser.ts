@@ -1,5 +1,5 @@
-import Lexer, { JumpSyntaxError } from "../lexer/Lexer";
-import Token, { TOKEN_TYPE } from "../lexer/Token";
+import Lexer from "../lexer/Lexer";
+import Token, { TokenType } from "../lexer/Token";
 import {
 	BinaryOperatorNode,
 	UnaryOperatorNode,
@@ -12,7 +12,9 @@ import {
 	TypeIdentifier,
 	VariableAssignmentNode,
 	VariableDeclarationNode,
+	VariableNode,
 } from "../ast/nodes/IdentifierNodes";
+import { JumpSyntaxError } from "../errors";
 
 const ERROR_MESSAGES = {
 	END_OF_INPUT: "Unexpected end of input.",
@@ -20,7 +22,7 @@ const ERROR_MESSAGES = {
 
 export default class Parser {
 	protected lexer: Lexer;
-	protected peekedToken: Token | null = null;
+	protected peekedTokens: Token[] = [];
 	protected position: SourcePosition;
 
 	constructor(lexer: Lexer) {
@@ -41,37 +43,68 @@ export default class Parser {
 	}
 
 	protected getStatement() {
-		// TODO: somehow check if it's a statement
+		// match 'int x' or 'x = '
+		if (
+			this.peekMatches(TokenType.IDENTIFIER) &&
+			(this.peek(2)?.is(TokenType.IDENTIFIER) ||
+				this.peek(2)?.is(TokenType.OPERATOR, "="))
+		) {
+			return this.getAssignment();
+		}
 		return this.getExpression();
 	}
 
-	// expression ::= term | term "+" expression | term "-" expression ;
-	protected getExpression(): ASTNode<any> {
-		const left = this.getTerm();
-
-		if (this.peekMatches(TOKEN_TYPE.OPERATOR, ["+", "-"])) {
-			return new BinaryOperatorNode(
-				left,
-				this.next(),
-				this.getExpression()
+	// assignment ::= type identifier = expression;
+	/**
+	 * Get the next variable assignment or declaration.
+	 */
+	protected getAssignment() {
+		const next = this.next(TokenType.IDENTIFIER);
+		if (this.peekMatches(TokenType.IDENTIFIER)) {
+			const type = next;
+			// this is a declaration
+			const identifier = this.next(TokenType.IDENTIFIER);
+			this.next(TokenType.OPERATOR, "=");
+			const expression = this.getExpression();
+			return new VariableDeclarationNode(
+				Identifier.fromToken(identifier),
+				new TypeIdentifier(type.symbol),
+				expression
+			);
+		} else {
+			const identifier = next;
+			this.next(TokenType.OPERATOR, "=");
+			const expression = this.getExpression();
+			return new VariableAssignmentNode(
+				Identifier.fromToken(identifier),
+				expression
 			);
 		}
-		return left;
 	}
 
-	// term ::= factor | factor "*" term | factor "/" term ;
-	protected getTerm(): ASTNode<any> {
-		const left = this.getFactor();
-		if (this.peekMatches(TOKEN_TYPE.OPERATOR, ["*", "/", "%"])) {
-			return new BinaryOperatorNode(left, this.next(), this.getTerm());
+	// expression ::= term | term ("+" term)* | term ("-" term)*;
+	protected getExpression(): ASTNode<any> {
+		let left = this.getTerm();
+
+		while (this.peekMatches(TokenType.OPERATOR, ["+", "-"])) {
+			left = new BinaryOperatorNode(left, this.next(), this.getTerm());
 		}
 		return left;
 	}
 
-	// factor ::= base | base "**" base ;
+	// term ::= factor | factor ("*" factor)* | factor ("/" factor)*;
+	protected getTerm(): ASTNode<any> {
+		let left = this.getFactor();
+		while (this.peekMatches(TokenType.OPERATOR, ["*", "/", "%"])) {
+			left = new BinaryOperatorNode(left, this.next(), this.getFactor());
+		}
+		return left;
+	}
+
+	// factor ::= base | (base "**")* base ;
 	protected getFactor(): ASTNode<any> {
 		const left = this.getBase();
-		if (this.peekMatches(TOKEN_TYPE.OPERATOR, "**")) {
+		if (this.peekMatches(TokenType.OPERATOR, "**")) {
 			return new BinaryOperatorNode(left, this.next(), this.getFactor());
 		}
 		return left;
@@ -79,31 +112,26 @@ export default class Parser {
 
 	// base ::= "(" expression ")" | number | "+" base | "-" base ;
 	protected getBase(): ASTNode<any> {
-		if (this.peekMatches(TOKEN_TYPE.OPERATOR, "(")) {
-			this.next(TOKEN_TYPE.OPERATOR, "(");
+		if (this.peekMatches(TokenType.OPERATOR, "(")) {
+			this.next(TokenType.OPERATOR, "(");
 			const exp = this.getExpression();
-			this.next(TOKEN_TYPE.OPERATOR, ")");
+			this.next(TokenType.OPERATOR, ")");
 			return exp;
-		} else if (this.peekMatches(TOKEN_TYPE.OPERATOR, ["+", "-"])) {
+		} else if (this.peekMatches(TokenType.OPERATOR, ["+", "-"])) {
 			return new UnaryOperatorNode(this.next(), this.getBase());
-		} else if (this.peek()?.type === TOKEN_TYPE.INT_LITERAL) {
+		} else if (this.peek()?.type === TokenType.INT_LITERAL) {
 			return new IntNode(this.next().symbol);
-		} else if (this.peek()?.type === TOKEN_TYPE.DOUBLE_LITERAL) {
+		} else if (this.peek()?.type === TokenType.DOUBLE_LITERAL) {
 			return new DoubleNode(this.next().symbol);
+		} else if (this.peek()?.type === TokenType.IDENTIFIER) {
+			return new VariableNode(Identifier.fromToken(this.next()));
 		}
 
 		// invalid token
-		if (!this.peek()) {
-			throw new JumpSyntaxError(
-				ERROR_MESSAGES.END_OF_INPUT,
-				this.lexer.getPosition()
-			);
-		} else {
-			throw new JumpSyntaxError(
-				`Unexpected token ${this.peek()!.symbol}`,
-				this.lexer.getPosition()
-			);
-		}
+		throw new JumpSyntaxError(
+			`Unexpected token ${this.peek()!.symbol}`,
+			this.lexer.getPosition()
+		);
 	}
 
 	/**
@@ -112,7 +140,7 @@ export default class Parser {
 	 */
 	protected hasNext(): boolean {
 		// return true if there's a peeked token or if the lexer has a next token.
-		return !!this.peekedToken || this.lexer.hasNextToken();
+		return this.peekedTokens.length > 0 || this.lexer.hasNextToken();
 	}
 
 	/**
@@ -127,7 +155,7 @@ export default class Parser {
 	 * @param assertType - The expected type of the token.
 	 * @protected
 	 */
-	protected next(assertType: TOKEN_TYPE): Token;
+	protected next(assertType: TokenType): Token;
 
 	/**
 	 * Consumes and returns the next token from the parser's lexer. If the type and symbol of the token doesn't
@@ -136,20 +164,14 @@ export default class Parser {
 	 * @param assertSymbol - The expected symbol of the token.
 	 * @protected
 	 */
-	protected next(assertType: TOKEN_TYPE, assertSymbol: string): Token;
+	protected next(assertType: TokenType, assertSymbol: string): Token;
 
-	protected next(assertType?: TOKEN_TYPE, assertSymbol?: string): Token {
+	protected next(assertType?: TokenType, assertSymbol?: string): Token {
 		if (
 			assertType &&
 			(!this.peekMatches(assertType) ||
 				(assertSymbol && !this.peekMatches(assertType, assertSymbol)))
 		) {
-			if (!this.peek()) {
-				throw new JumpSyntaxError(
-					ERROR_MESSAGES.END_OF_INPUT,
-					this.lexer.getPosition()
-				);
-			}
 			throw new JumpSyntaxError(
 				`Expected a '${assertSymbol}' ${assertType} token, but got a '${
 					this.peek()!.symbol
@@ -157,11 +179,17 @@ export default class Parser {
 				this.position
 			);
 		}
-		if (this.peekedToken) {
-			const peeked = this.peekedToken;
-			this.peekedToken = null;
-			return peeked;
+		if (this.peekedTokens.length > 0) {
+			return this.peekedTokens.shift()!;
 		}
+		return this.nextFromLexer();
+	}
+
+	/**
+	 * Returns the next token from the lexer, ignoring any peeked tokens in the queue.
+	 * @protected
+	 */
+	protected nextFromLexer() {
 		const next = this.lexer.next().value;
 		this.position = this.lexer.getPosition();
 		if (!next) {
@@ -175,15 +203,19 @@ export default class Parser {
 
 	/**
 	 * Returns the next token from the parser's lexer without consuming it.
+	 * @param n - The number of tokens forwards to peek. e.g. n = 2 will give the
+	 * 	next next token without consuming any tokens. Default: n = 1.
 	 * @protected
 	 */
-	protected peek(): Token | null {
-		if (this.peekedToken) {
-			return this.peekedToken;
+	protected peek(n = 1): Token | null {
+		while (this.peekedTokens.length < n) {
+			// if n == 1, continue and have an error be thrown.
+			if (n !== 1 && !this.lexer.hasNextToken()) {
+				return null;
+			}
+			this.peekedTokens.push(this.nextFromLexer());
 		}
-
-		this.peekedToken = this.next();
-		return this.peekedToken;
+		return this.peekedTokens[n - 1];
 	}
 
 	/**
@@ -191,34 +223,26 @@ export default class Parser {
 	 * @param type - The type to check.
 	 * @protected
 	 */
-	protected peekMatches(type: TOKEN_TYPE): boolean;
-
-	/**
-	 * Returns true if a next token exists peekNext() matches the type & value provided.
-	 * @param type - The type to check.
-	 * @param symbol - The symbol to check.
-	 * @protected
-	 */
-	protected peekMatches(type: TOKEN_TYPE, symbol: string): boolean;
+	protected peekMatches(type: TokenType): boolean;
 
 	/**
 	 * Returns true if a next token exists peekNext() matches the type, and the
-	 * value is in the array of symbols.
+	 * value matches symbol, or is in symbols if symbol is an array.
 	 * @param type - The type to check.
 	 * @param symbols - An array of symbols to check against.
 	 * @protected
 	 */
-	protected peekMatches(type: TOKEN_TYPE, symbols: string[]): boolean;
+	protected peekMatches(type: TokenType, symbol: string | string[]): boolean;
 
 	protected peekMatches(
-		type: TOKEN_TYPE,
+		type: TokenType,
 		symbol?: string | string[]
 	): boolean {
 		if (!this.hasNext()) return false;
 
 		if (typeof symbol === "string") {
 			// symbol is a string
-			return !!this.peek()?.equals(new Token(type, symbol));
+			return !!this.peek()?.is(type, symbol);
 		} else if (symbol) {
 			// symbol is an array
 			return symbol.some((s) => this.peekMatches(type, s));

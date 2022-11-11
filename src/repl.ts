@@ -4,6 +4,7 @@ import * as readline from "readline";
 import Parser from "./parser/Parser";
 import { promises as fs } from "fs";
 import * as util from "util";
+import SymbolTable from "./ast/SymbolTable";
 // const s = `"hello" 2 0.2 42.294 "23.1"`;
 // const expected = [
 // 	new Token(TOKEN_TYPE.STRING_LITERAL, "hello"),
@@ -12,7 +13,6 @@ import * as util from "util";
 // 	new Token(TOKEN_TYPE.DOUBLE_LITERAL, "42.294"),
 // 	new Token(TOKEN_TYPE.STRING_LITERAL, "23.1")
 // ]
-
 
 async function repl() {
 	const rl = readline.createInterface({
@@ -25,13 +25,21 @@ async function repl() {
 			rl.question(question, (answer) => res(answer))
 		);
 
+	let symbolTable = new SymbolTable();
+
 	console.log("Jump REPL v0.0.2");
-	console.log("Type exit to exit, detail for details on last entry.");
+	console.log(
+		"Type exit to exit, reset to reset memory, detail for details on last entry."
+	);
 	// persist to allow the debug keyword to go back one
 	let source: Source | undefined;
 	while (true) {
 		const input = await getInput("Jump> ");
 		if (input === "exit") break;
+		if (input === "reset") {
+			symbolTable = new SymbolTable();
+			continue;
+		}
 		if (input.startsWith("detail")) {
 			// it can either be 'detail' or 'detail [filepath]'
 			if (input.split(" ").length <= 2) {
@@ -47,10 +55,16 @@ async function repl() {
 				details.push("=== DETAIL VIEW ===");
 				details.push("Lexer: ");
 				try {
-					details.push(Array.from(lexer));
+					details.push(
+						...Array.from(lexer).map((token) => token.toString())
+					);
 					try {
 						details.push("Parser: ");
-						details.push(new Parser(lexer.clone()).getRoot());
+						details.push(
+							new Parser(lexer.clone()).getRoot().toJSON()
+						);
+						details.push("");
+						details.push("");
 					} catch (e) {
 						details.push("Parser failed with error: ");
 						details.push(e);
@@ -67,7 +81,11 @@ async function repl() {
 					await fs.writeFile(
 						path,
 						details
-							.map((obj) => typeof obj === "string" ? obj : util.inspect(obj))
+							.map((obj) =>
+								typeof obj === "string"
+									? obj
+									: util.inspect(obj, false, null)
+							)
 							.join("\n"),
 						"utf8"
 					);
@@ -80,7 +98,10 @@ async function repl() {
 			source = new Source(input);
 			const lexer = new Lexer(source);
 			const root = new Parser(lexer).getRoot();
-			console.log(root.evaluate());
+			const result = root.evaluate(symbolTable);
+			if (result !== undefined) {
+				console.log(result);
+			}
 		} catch (e) {
 			console.log(e);
 		}

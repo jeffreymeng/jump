@@ -1,5 +1,5 @@
 import SourcePosition from "./SourcePosition";
-import { JumpSyntaxError } from "./Lexer";
+import { JumpSyntaxError } from "../errors";
 
 export default class Source {
 	protected _index = 0;

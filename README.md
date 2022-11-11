@@ -19,7 +19,7 @@ for (i in nums.filter(n => n % 2 == 0)) {
 ```
 
 ```typescript
-`// Functional array methods
+// Functional array methods
 {name: string; age: int; }[] pets = [{
 	name: "Boo",
     age: 9
@@ -28,7 +28,7 @@ for (i in nums.filter(n => n % 2 == 0)) {
     age: 4
 }];
 
-`print(pets.sort(by="age", order="asc"))
+print(pets.sort(by="age", order="asc"))
 ```
 
 ```typescript

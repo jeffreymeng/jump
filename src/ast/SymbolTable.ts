@@ -1,5 +1,5 @@
-import { JumpInternalError } from "./JumpInternalError";
 import SourcePosition from "../lexer/SourcePosition";
+import { JumpInternalError } from "../errors";
 
 export enum SCOPE_TYPE {
 	LOOP = "loop",
@@ -86,7 +86,7 @@ export default class SymbolTable {
 	public declare(id: string, type: string, value: any): void {
 		if (this.table.at(-1)!.symbols.has(id)) {
 			throw new JumpInternalError(
-				"Cannot define a variable that's already been defined."
+				`Identifier '${id}' has already been declared.`
 			);
 		}
 		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -112,7 +112,7 @@ export default class SymbolTable {
 			}
 		}
 		throw new JumpInternalError(
-			`Symbol table could not find symbol ${id} to update!`
+			`Unable to update identifier '${id}' because it was not found in the symbol table.`
 		);
 	}
 
@@ -127,7 +127,7 @@ export default class SymbolTable {
 			}
 		}
 		throw new JumpInternalError(
-			`Symbol table could not find symbol ${id} to get!`
+			`Unable to get identifier '${id}' because it was not found in the symbol table.`
 		);
 	}
 }

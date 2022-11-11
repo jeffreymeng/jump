@@ -1,5 +1,5 @@
 import ASTNode from "./ASTNode";
-import { JumpInternalError } from "../JumpInternalError";
+import { JumpInternalError } from "../../errors";
 
 abstract class LiteralNode<T> extends ASTNode<T> {
 	public readonly value: T;
@@ -22,8 +22,7 @@ export class DoubleNode extends LiteralNode<number> {
 
 	public toJSON() {
 		return {
-			name: "DoubleNode",
-			value: this.value,
+			node: `Double Literal: ${this.value}`,
 		};
 	}
 }
@@ -45,8 +44,7 @@ export class IntNode extends LiteralNode<number> {
 
 	public toJSON() {
 		return {
-			name: "IntNode",
-			value: this.value,
+			node: `Int Literal: ${this.value}`,
 		};
 	}
 }
@@ -58,8 +56,7 @@ export class StringNode extends LiteralNode<string> {
 
 	public toJSON() {
 		return {
-			name: "StringNode",
-			value: this.value,
+			node: `String Literal: "${this.value}"`,
 		};
 	}
 }

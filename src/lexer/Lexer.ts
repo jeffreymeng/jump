@@ -1,18 +1,8 @@
-import Token, { TOKEN_TYPE } from "./Token";
+import Token, { TokenType } from "./Token";
 import SourcePosition from "./SourcePosition";
 import Source from "./Source";
+import { JumpSyntaxError } from "../errors";
 
-/**
- * An error in the syntax of the input.
- */
-export class JumpSyntaxError extends Error {
-	public readonly position: SourcePosition;
-
-	constructor(message: string, position: SourcePosition) {
-		super(message);
-		this.position = position;
-	}
-}
 
 export default class Lexer implements IterableIterator<Token> {
 	/**
@@ -63,7 +53,7 @@ export default class Lexer implements IterableIterator<Token> {
 				c,
 				"Expected string to be closed."
 			);
-			return new Token(TOKEN_TYPE.STRING_LITERAL, buffer);
+			return this.createToken(TokenType.STRING_LITERAL, buffer);
 		}
 		if (Lexer.DIGITS.includes(c)) {
 			let buffer = c + source.consumeAll(Lexer.DIGITS);
@@ -77,10 +67,10 @@ export default class Lexer implements IterableIterator<Token> {
 				// split it so the empty string doesn't trigger this condition
 				!Lexer.DIGITS.split("").includes(this.source.peekNext(1))
 			) {
-				return new Token(TOKEN_TYPE.INT_LITERAL, buffer);
+				return this.createToken(TokenType.INT_LITERAL, buffer);
 			} else {
 				buffer += this.source.next() + source.consumeAll(Lexer.DIGITS);
-				return new Token(TOKEN_TYPE.DOUBLE_LITERAL, buffer);
+				return this.createToken(TokenType.DOUBLE_LITERAL, buffer);
 			}
 		}
 		if ("+-*/%".includes(c)) {
@@ -93,7 +83,7 @@ export default class Lexer implements IterableIterator<Token> {
 			// check for math assignment operators (+=, *=, **=, %=, etc.)
 			if (source.peekNext() === "=") {
 				source.next();
-				return new Token(TOKEN_TYPE.OPERATOR, op + "=");
+				return this.createToken(TokenType.OPERATOR, op + "=");
 			}
 
 			// check for inc/dec (++/--) (these can't be assignment operators)
@@ -102,7 +92,7 @@ export default class Lexer implements IterableIterator<Token> {
 			}
 
 			// return a basic operator
-			return new Token(TOKEN_TYPE.OPERATOR, op);
+			return this.createToken(TokenType.OPERATOR, op);
 		}
 
 		// parentheses can technically be considered both operators and control flow characters.
@@ -110,23 +100,23 @@ export default class Lexer implements IterableIterator<Token> {
 		if ("[]().<>!=,&|".includes(c)) {
 			// == and => (function arrow) operators
 			if (c === "=" && "=>".includes(source.peekNext())) {
-				return new Token(TOKEN_TYPE.OPERATOR, c + source.next());
+				return this.createToken(TokenType.OPERATOR, c + source.next());
 			}
 
 			// logical operators that can be modified with the equal sign
 			if ("<>!".includes(c) && source.peekNext() === "=") {
-				return new Token(TOKEN_TYPE.OPERATOR, c + source.next());
+				return this.createToken(TokenType.OPERATOR, c + source.next());
 			}
 
 			// && and || operators
 			if ("&|".includes(c) && source.peekNext() === c) {
-				return new Token(TOKEN_TYPE.OPERATOR, c + source.next());
+				return this.createToken(TokenType.OPERATOR, c + source.next());
 			}
 
-			return new Token(TOKEN_TYPE.OPERATOR, c);
+			return this.createToken(TokenType.OPERATOR, c);
 		}
 		if ("\n;{}".includes(c)) {
-			return new Token(TOKEN_TYPE.CONTROL, c);
+			return this.createToken(TokenType.CONTROL, c);
 		}
 		if (
 			("$_" + Lexer.UPPERCASE_LETTERS + Lexer.LOWERCASE_LETTERS).includes(
@@ -143,9 +133,9 @@ export default class Lexer implements IterableIterator<Token> {
 				);
 
 			if (Lexer.KEYWORDS.includes(buffer)) {
-				return new Token(TOKEN_TYPE.KEYWORD, buffer);
+				return this.createToken(TokenType.KEYWORD, buffer);
 			}
-			return new Token(TOKEN_TYPE.IDENTIFIER, buffer);
+			return this.createToken(TokenType.IDENTIFIER, buffer);
 		}
 		if (/\s/g.test(c)) {
 			// skip any spaces and tabs, and other whitespace (except newlines,
@@ -192,5 +182,9 @@ export default class Lexer implements IterableIterator<Token> {
 
 	public [Symbol.iterator](): IterableIterator<Token> {
 		return this;
+	}
+
+	protected createToken(type: TokenType, symbol: string) {
+		return new Token(type, symbol, this.getPosition());
 	}
 }
