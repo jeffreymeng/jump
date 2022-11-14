@@ -1,7 +1,12 @@
 import Token, { TokenType } from "../../lexer/Token";
 import ASTNode from "./ASTNode";
-import { JumpASTInternalError, JumpDivisionByZeroError } from "../../errors";
+import {
+	JumpDivisionByZeroError,
+	JumpInternalError,
+	JumpTypeError,
+} from "../../errors";
 import SymbolTable from "../SymbolTable";
+import { isCallable } from "../JumpCallable";
 
 export class BinaryOperatorNode extends ASTNode<number> {
 	constructor(
@@ -37,7 +42,7 @@ export class BinaryOperatorNode extends ASTNode<number> {
 		} else if (this.operator.is(TokenType.OPERATOR, "%")) {
 			return left % right;
 		} else {
-			throw new JumpASTInternalError(
+			throw new JumpInternalError(
 				`Unexpected token for BinaryOperatorNode operator. Got ${this.operator.toString()},` +
 					` but expected one of: +, -, *, /, **, %.`
 			);
@@ -67,7 +72,7 @@ export class UnaryOperatorNode extends ASTNode<number> {
 		} else if (this.operator.is(TokenType.OPERATOR, "-")) {
 			return -1 * this.right.evaluate(symbolTable);
 		} else {
-			throw new JumpASTInternalError(
+			throw new JumpInternalError(
 				`Unexpected token for UnaryOperatorNode operator. Got ${this.operator.toString()},` +
 					` but expected a plus or minus operator.`
 			);
@@ -78,6 +83,35 @@ export class UnaryOperatorNode extends ASTNode<number> {
 		return {
 			node: `Unary ${this.operator.symbol}`,
 			right: this.right.toJSON(),
+		};
+	}
+}
+
+export class CallNode extends ASTNode<any> {
+	constructor(
+		public readonly callee: ASTNode<any>,
+		public readonly args: ASTNode<any>[]
+	) {
+		super();
+	}
+
+	public evaluate(symbolTable: SymbolTable) {
+		if (!isCallable(this.callee)) {
+			throw new JumpTypeError(
+				`Unable to call ${this.callee.evaluate(symbolTable)}`
+			);
+		}
+		return this.callee.call(
+			symbolTable,
+			this.args.map((arg) => arg.evaluate(symbolTable))
+		);
+	}
+
+	public toJSON() {
+		return {
+			node: `Call`,
+			callee: this.callee.toJSON(),
+			args: this.args.map((arg) => arg.toJSON()),
 		};
 	}
 }

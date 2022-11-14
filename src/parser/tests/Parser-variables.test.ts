@@ -2,7 +2,7 @@ import { expect, describe, test } from "@jest/globals";
 import exec from "./exec";
 import SymbolTable from "../../ast/SymbolTable";
 import { IntNode } from "../../ast/nodes/LiteralNodes";
-import { JumpSyntaxError } from "../../errors";
+import { JumpNameError, JumpSyntaxError } from "../../errors";
 
 describe("Variable Declaration", () => {
 	test("Declaration with single constant value", () => {
@@ -45,4 +45,13 @@ describe("Variable Declaration", () => {
 		expect(exec("x + 3", st)).toBe(6);
 		expect(exec("x + y * 3", st)).toBe(30);
 	});
+
+	test("Relying on undeclared variables throws a NameError", () => {
+		const st = new SymbolTable();
+		expect(() => exec("x", st)).toThrowError(JumpNameError);
+
+		exec("int x = 3", st);
+		expect(exec("x", st)).toBe(3);
+		expect(() => exec("3 + y", st)).toThrowError(JumpNameError);
+	})
 });

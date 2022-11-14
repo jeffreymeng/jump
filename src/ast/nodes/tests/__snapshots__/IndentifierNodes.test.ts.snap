@@ -1,14 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`DeclarationNode Creates the same json when toJSON() is called 1`] = `
-{
-  "node": "Declaration: type [object Object], id [object Object]",
-  "value": {
-    "node": "Int Literal: 3",
-  },
-}
-`;
-
 exports[`VariableDeclarationNode Creates the same json when toJSON() is called 1`] = `
 {
   "node": "Declaration: type [object Object], id [object Object]",
@@ -29,6 +20,6 @@ exports[`VariableDeclarationNode Creates the same json when toJSON() is called 2
 
 exports[`VariableNode Creates the same json when toJSON() is called 1`] = `
 {
-  "node": "Variable: id [object Object]",
+  "node": "Identifier: foo",
 }
 `;

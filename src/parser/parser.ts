@@ -2,17 +2,18 @@ import Lexer from "../lexer/Lexer";
 import Token, { TokenType } from "../lexer/Token";
 import {
 	BinaryOperatorNode,
+	CallNode,
 	UnaryOperatorNode,
 } from "../ast/nodes/OperatorNode";
 import ASTNode from "../ast/nodes/ASTNode";
-import { DoubleNode, IntNode } from "../ast/nodes/LiteralNodes";
+import { DoubleNode, IntNode, StringNode } from "../ast/nodes/LiteralNodes";
 import SourcePosition from "../lexer/SourcePosition";
 import {
 	Identifier,
+	IdentifierNode,
 	TypeIdentifier,
 	VariableAssignmentNode,
 	VariableDeclarationNode,
-	VariableNode,
 } from "../ast/nodes/IdentifierNodes";
 import { JumpSyntaxError } from "../errors";
 
@@ -103,28 +104,55 @@ export default class Parser {
 
 	// factor ::= base | (base "**")* base ;
 	protected getFactor(): ASTNode<any> {
-		const left = this.getBase();
+		const left = this.getUnary();
 		if (this.peekMatches(TokenType.OPERATOR, "**")) {
 			return new BinaryOperatorNode(left, this.next(), this.getFactor());
 		}
 		return left;
 	}
 
-	// base ::= "(" expression ")" | number | "+" base | "-" base ;
+	protected getUnary(): ASTNode<any> {
+		if (this.peekMatches(TokenType.OPERATOR, ["+", "-"])) {
+			return new UnaryOperatorNode(this.next(), this.getBase());
+		}
+		return this.getCall();
+	}
+
+	protected getCall(): ASTNode<any> {
+		const left = this.getBase();
+		if (this.nextIf(TokenType.OPERATOR, "(")) {
+			const args = [];
+			if (this.nextIf(TokenType.OPERATOR, ")")) {
+				return new CallNode(left, []);
+			}
+
+			// there is at least one arg
+			args.push(this.getExpression());
+			while (this.nextIf(TokenType.OPERATOR, ",")) {
+				args.push(this.getExpression());
+			}
+
+			this.next(TokenType.OPERATOR, ")");
+			return new CallNode(left, args);
+		}
+
+		return left;
+	}
+
+	// base ::= "(" expression ")" | number;
 	protected getBase(): ASTNode<any> {
-		if (this.peekMatches(TokenType.OPERATOR, "(")) {
-			this.next(TokenType.OPERATOR, "(");
+		if (this.nextIf(TokenType.OPERATOR, "(")) {
 			const exp = this.getExpression();
 			this.next(TokenType.OPERATOR, ")");
 			return exp;
-		} else if (this.peekMatches(TokenType.OPERATOR, ["+", "-"])) {
-			return new UnaryOperatorNode(this.next(), this.getBase());
 		} else if (this.peek()?.type === TokenType.INT_LITERAL) {
 			return new IntNode(this.next().symbol);
 		} else if (this.peek()?.type === TokenType.DOUBLE_LITERAL) {
 			return new DoubleNode(this.next().symbol);
+		} else if (this.peek()?.type === TokenType.STRING_LITERAL) {
+			return new StringNode(this.next().symbol);
 		} else if (this.peek()?.type === TokenType.IDENTIFIER) {
-			return new VariableNode(Identifier.fromToken(this.next()));
+			return new IdentifierNode(Identifier.fromToken(this.next()));
 		}
 
 		// invalid token
@@ -199,6 +227,23 @@ export default class Parser {
 			);
 		}
 		return next;
+	}
+
+	/**
+	 * If the next token matches the specified type and symbol, consumes it and
+	 * returns true. Otherwise, returns false. Equivalent to calling peekMatches()
+	 * and then next() if the result is true;
+	 * @param type - The type to check for.
+	 * @param symbol - The symbol to check for.
+	 * @protected
+	 */
+	protected nextIf(type?: TokenType, symbol?: string | string[]) {
+		if (this.peekMatches(type as any, symbol as any)) {
+			this.next(type as any, symbol as any);
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	/**

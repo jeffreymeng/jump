@@ -4,7 +4,7 @@ import {
 	TypeIdentifier,
 	VariableAssignmentNode,
 	VariableDeclarationNode,
-	VariableNode,
+	IdentifierNode,
 } from "../IdentifierNodes";
 import Token, { TokenType } from "../../../lexer/Token";
 import SourcePosition from "../../../lexer/SourcePosition";
@@ -86,7 +86,7 @@ describe("VariableDeclarationNode", () => {
 });
 
 describe("VariableNode", () => {
-	const node = new VariableNode(new Identifier("foo"));
+	const node = new IdentifierNode(new Identifier("foo"));
 
 	beforeAll(() => {
 		mockSymbolTable.mockClear();

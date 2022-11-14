@@ -1,7 +1,13 @@
 import ASTNode from "./ASTNode";
 import SymbolTable from "../SymbolTable";
 import Token, { TokenType } from "../../lexer/Token";
-import { JumpInternalError } from "../../errors";
+import { JumpInternalError, JumpNameError } from "../../errors";
+import JumpCallable from "../JumpCallable";
+import {
+	BUILT_IN_FUNCTIONS,
+	BuiltInFunctionName,
+	BuiltInFunctionNode,
+} from "./FunctionNodes";
 
 export class Identifier {
 	constructor(public readonly name: string) {}
@@ -79,7 +85,7 @@ export class VariableAssignmentNode extends ASTNode<any> {
 	}
 }
 
-export class VariableNode extends ASTNode<any> {
+export class IdentifierNode extends ASTNode<any> implements JumpCallable {
 	public readonly id: Identifier;
 
 	constructor(id: Identifier) {
@@ -88,12 +94,27 @@ export class VariableNode extends ASTNode<any> {
 	}
 
 	public evaluate(symbolTable: SymbolTable): any {
-		return symbolTable.get(this.id.name).value;
+		if (symbolTable.has(this.id.name)) {
+			return symbolTable.get(this.id.name).value;
+		} else if (BUILT_IN_FUNCTIONS.includes(this.id.name as any)) {
+			return new BuiltInFunctionNode(this.id.name as BuiltInFunctionName);
+		} else {
+			throw new JumpNameError(`Unknown identifier: ${this.id.name}`);
+		}
 	}
 
 	public toJSON() {
 		return {
-			node: `Variable: id ${this.id}`,
+			node: `Identifier: ${this.id.name}`,
 		};
+	}
+
+	public call(symbolTable: SymbolTable, args: ASTNode<any>[]) {
+		if (BUILT_IN_FUNCTIONS.includes(this.id.name as any)) {
+			return new BuiltInFunctionNode(
+				this.id.name as BuiltInFunctionName
+			).call(symbolTable, args);
+		}
+		throw new JumpInternalError("Call not implemented on variables yet.");
 	}
 }

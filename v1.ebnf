@@ -3,13 +3,15 @@ digit           ::= "0" ... "9";
 number          ::= ['-'] digit ['.' digit];
 expression      ::= term | term "+" expression | term "-" expression ;
 term            ::= factor | factor "*" term | factor "/" term ;
-factor          ::= base | base "**" base ;
+factor          ::= call | call "**" call ;
+unary           ::= "+" base | "-" base ;
 
-// todo: support parameters, etc
-function_call   ::= base "()"
-base            ::= "(" expression ")" | number | "+" base | "-" base ;
+call            ::= base "(" [function_args] ")"
+function_args   ::= [expression ","] expression
 
-type_modifier    ::= "[]"
+base            ::= "(" expression ")" | number ;
+
+type_modifier   ::= "[]"
 primitive       ::= "int" | "double" | "num"
 type            ::= primitive | primitive [type_modifier]
 
