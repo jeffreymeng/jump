@@ -38,6 +38,19 @@ export class JumpNameError extends JumpError {
 	}
 }
 
+/**
+ * Thrown if the provided arguments are invalid in either quantity or
+ * value (but not type).
+ */
+export class JumpArgumentError extends JumpError {
+	// public readonly position: SourcePosition;
+
+	constructor(message: string) {
+		super(message);
+		// this.position = position;
+	}
+}
+
 export class JumpInternalError extends JumpError {
 	constructor(message: string) {
 		super(message);

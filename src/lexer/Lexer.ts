@@ -3,7 +3,6 @@ import SourcePosition from "./SourcePosition";
 import Source from "./Source";
 import { JumpSyntaxError } from "../errors";
 
-
 export default class Lexer implements IterableIterator<Token> {
 	/**
 	 * The source code of the lexer.
@@ -30,7 +29,7 @@ export default class Lexer implements IterableIterator<Token> {
 	public static readonly UPPERCASE_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 	// TODO: this might be more optimized with a trie
-	public static readonly KEYWORDS = ["for", "in"];
+	public static readonly KEYWORDS = ["for", "in", "if", "while"];
 
 	/**
 	 * Returns a new lexer on the same source text but with any internal state reset.
@@ -55,6 +54,7 @@ export default class Lexer implements IterableIterator<Token> {
 			);
 			return this.createToken(TokenType.STRING_LITERAL, buffer);
 		}
+
 		if (Lexer.DIGITS.includes(c)) {
 			let buffer = c + source.consumeAll(Lexer.DIGITS);
 			// if the next character is a dot, then this is part of a double.
@@ -116,6 +116,9 @@ export default class Lexer implements IterableIterator<Token> {
 			return this.createToken(TokenType.OPERATOR, c);
 		}
 		if ("\n;{}".includes(c)) {
+			if (c === "\n") {
+				return this.nextToken();
+			}
 			return this.createToken(TokenType.CONTROL, c);
 		}
 		if (
@@ -131,7 +134,9 @@ export default class Lexer implements IterableIterator<Token> {
 						Lexer.UPPERCASE_LETTERS +
 						Lexer.LOWERCASE_LETTERS
 				);
-
+			if (buffer === "true" || buffer === "false") {
+				return this.createToken(TokenType.BOOLEAN_LITERAL, buffer);
+			}
 			if (Lexer.KEYWORDS.includes(buffer)) {
 				return this.createToken(TokenType.KEYWORD, buffer);
 			}

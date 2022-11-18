@@ -49,9 +49,33 @@ export class IntNode extends LiteralNode<number> {
 	}
 }
 
+export class BooleanNode extends LiteralNode<boolean> {
+	constructor(symbol: string) {
+		if (symbol === "true") {
+			super(true);
+		} else if (symbol === "false") {
+			super(false);
+		} else {
+			throw new JumpInternalError(
+				"BooleanNode created with invalid value (expected 'true' or 'false')."
+			);
+		}
+	}
+
+	public evaluate() {
+		return this.value;
+	}
+
+	public toJSON() {
+		return {
+			node: `Int Literal: ${this.value}`,
+		};
+	}
+}
+
 export class StringNode extends LiteralNode<string> {
 	public evaluate() {
-		return `"${this.value.replace(/"/g, '\\"')}"`;
+		return this.value;
 	}
 
 	public toJSON() {

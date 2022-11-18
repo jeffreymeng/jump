@@ -1,14 +1,15 @@
 import ASTNode from "./ASTNode";
 import JumpCallable from "../JumpCallable";
 import SymbolTable from "../SymbolTable";
-import { JumpInternalError, JumpTypeError } from "../../errors";
+import {
+	JumpArgumentError,
+	JumpInternalError,
+	JumpTypeError,
+} from "../../errors";
 
-export type BuiltInFunctionName = "print" | "max" | "min";
-export const BUILT_IN_FUNCTIONS: BuiltInFunctionName[] = [
-	"print",
-	"max",
-	"min",
-];
+export const BUILT_IN_FUNCTIONS = ["print", "max", "min", "prompt"] as const;
+export type BuiltInFunctionName = typeof BUILT_IN_FUNCTIONS[number];
+
 export class BuiltInFunctionNode
 	extends ASTNode<string>
 	implements JumpCallable

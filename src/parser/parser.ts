@@ -6,7 +6,12 @@ import {
 	UnaryOperatorNode,
 } from "../ast/nodes/OperatorNode";
 import ASTNode from "../ast/nodes/ASTNode";
-import { DoubleNode, IntNode, StringNode } from "../ast/nodes/LiteralNodes";
+import {
+	BooleanNode,
+	DoubleNode,
+	IntNode,
+	StringNode,
+} from "../ast/nodes/LiteralNodes";
 import SourcePosition from "../lexer/SourcePosition";
 import {
 	Identifier,
@@ -16,6 +21,12 @@ import {
 	VariableDeclarationNode,
 } from "../ast/nodes/IdentifierNodes";
 import { JumpSyntaxError } from "../errors";
+import {
+	CompoundStatementNode,
+	ExpressionNode,
+	IfStatementNode,
+	StatementNode, WhileStatementNode,
+} from "../ast/nodes/StatementNodes";
 
 const ERROR_MESSAGES = {
 	END_OF_INPUT: "Unexpected end of input.",
@@ -31,8 +42,16 @@ export default class Parser {
 		this.position = lexer.getPosition();
 	}
 
-	public getRoot(): ASTNode<any> {
-		const statement = this.getStatement();
+	public getRoot(): CompoundStatementNode {
+		return this.getCompoundStatements();
+	}
+
+	protected getCompoundStatements(): CompoundStatementNode {
+		const statements = [this.getStatement()];
+
+		while (this.hasNext()) {
+			statements.push(this.getStatement());
+		}
 		if (this.hasNext()) {
 			const next = this.next();
 			throw new JumpSyntaxError(
@@ -40,26 +59,63 @@ export default class Parser {
 				this.lexer.getPosition()
 			);
 		}
-		return statement;
+		return new CompoundStatementNode(statements);
 	}
 
-	protected getStatement() {
+	protected getBlock(): CompoundStatementNode {
+		this.nextNewlines();
+		this.next(TokenType.CONTROL, "{");
+		const statements = [];
+
+		while (!this.peekMatches(TokenType.CONTROL, "}")) {
+			statements.push(this.getStatement());
+		}
+
+		const block = new CompoundStatementNode(statements);
+		this.next(TokenType.CONTROL, "}");
+		this.nextNewlines();
+		return block;
+	}
+
+	protected getStatement(): StatementNode | ExpressionNode {
 		// match 'int x' or 'x = '
+		let left;
 		if (
 			this.peekMatches(TokenType.IDENTIFIER) &&
 			(this.peek(2)?.is(TokenType.IDENTIFIER) ||
 				this.peek(2)?.is(TokenType.OPERATOR, "="))
 		) {
-			return this.getAssignment();
+			left = this.getAssignment();
+		} else if (this.peekMatches(TokenType.KEYWORD, ["if", "while"])) {
+			const type = this.next().symbol;
+			this.next(TokenType.OPERATOR, "(");
+			const condition = this.getExpression();
+			this.next(TokenType.OPERATOR, ")");
+			this.nextNewlines();
+
+			if (type === "if") {
+				return new IfStatementNode(condition, this.getBlock());
+			} else {
+				return new WhileStatementNode(condition, this.getBlock());
+			}
+		} else {
+			left = this.getExpression();
 		}
-		return this.getExpression();
+		this.next(
+			TokenType.CONTROL,
+			";",
+			"Expected semicolon after expression."
+		);
+		return left;
 	}
 
 	// assignment ::= type identifier = expression;
 	/**
 	 * Get the next variable assignment or declaration.
 	 */
-	protected getAssignment() {
+	protected getAssignment():
+		| VariableDeclarationNode
+		| VariableAssignmentNode {
 		const next = this.next(TokenType.IDENTIFIER);
 		if (this.peekMatches(TokenType.IDENTIFIER)) {
 			const type = next;
@@ -84,7 +140,62 @@ export default class Parser {
 	}
 
 	// expression ::= term | term ("+" term)* | term ("-" term)*;
-	protected getExpression(): ASTNode<any> {
+	protected getExpression(): ExpressionNode {
+		return new ExpressionNode(this.getLogicalAnd());
+	}
+
+	protected getLogicalAnd(): ASTNode<any> {
+		let left = this.getLogicalOr();
+
+		while (this.peekMatches(TokenType.OPERATOR, "&&")) {
+			left = new BinaryOperatorNode(
+				left,
+				this.next(),
+				this.getLogicalOr()
+			);
+		}
+		return left;
+	}
+
+	protected getLogicalOr(): ASTNode<any> {
+		let left = this.getEquality();
+
+		while (this.peekMatches(TokenType.OPERATOR, "||")) {
+			left = new BinaryOperatorNode(
+				left,
+				this.next(),
+				this.getEquality()
+			);
+		}
+		return left;
+	}
+
+	protected getEquality(): ASTNode<any> {
+		let left = this.getComparison();
+		while (this.peekMatches(TokenType.OPERATOR, ["==", "!="])) {
+			left = new BinaryOperatorNode(
+				left,
+				this.next(),
+				this.getComparison()
+			);
+		}
+		return left;
+	}
+
+	protected getComparison(): ASTNode<any> {
+		let left = this.getAddition();
+		while (this.peekMatches(TokenType.OPERATOR, ["<", "<=", ">=", ">"])) {
+			left = new BinaryOperatorNode(
+				left,
+				this.next(),
+				this.getAddition()
+			);
+		}
+		return left;
+	}
+
+	// expression ::= term | term ("+" term)* | term ("-" term)*;
+	protected getAddition(): ASTNode<any> {
 		let left = this.getTerm();
 
 		while (this.peekMatches(TokenType.OPERATOR, ["+", "-"])) {
@@ -114,21 +225,23 @@ export default class Parser {
 	protected getUnary(): ASTNode<any> {
 		if (this.peekMatches(TokenType.OPERATOR, ["+", "-"])) {
 			return new UnaryOperatorNode(this.next(), this.getBase());
+		} else if (this.peekMatches(TokenType.OPERATOR, "!")) {
+			return new UnaryOperatorNode(this.next(), this.getUnary());
 		}
 		return this.getCall();
 	}
 
 	protected getCall(): ASTNode<any> {
 		const left = this.getBase();
-		if (this.nextIf(TokenType.OPERATOR, "(")) {
+		if (this.nextIs(TokenType.OPERATOR, "(")) {
 			const args = [];
-			if (this.nextIf(TokenType.OPERATOR, ")")) {
+			if (this.nextIs(TokenType.OPERATOR, ")")) {
 				return new CallNode(left, []);
 			}
 
 			// there is at least one arg
 			args.push(this.getExpression());
-			while (this.nextIf(TokenType.OPERATOR, ",")) {
+			while (this.nextIs(TokenType.OPERATOR, ",")) {
 				args.push(this.getExpression());
 			}
 
@@ -141,7 +254,7 @@ export default class Parser {
 
 	// base ::= "(" expression ")" | number;
 	protected getBase(): ASTNode<any> {
-		if (this.nextIf(TokenType.OPERATOR, "(")) {
+		if (this.nextIs(TokenType.OPERATOR, "(")) {
 			const exp = this.getExpression();
 			this.next(TokenType.OPERATOR, ")");
 			return exp;
@@ -151,6 +264,8 @@ export default class Parser {
 			return new DoubleNode(this.next().symbol);
 		} else if (this.peek()?.type === TokenType.STRING_LITERAL) {
 			return new StringNode(this.next().symbol);
+		} else if (this.peek()?.type === TokenType.BOOLEAN_LITERAL) {
+			return new BooleanNode(this.next().symbol);
 		} else if (this.peek()?.type === TokenType.IDENTIFIER) {
 			return new IdentifierNode(Identifier.fromToken(this.next()));
 		}
@@ -190,20 +305,31 @@ export default class Parser {
 	 * match the provided arguments, an error will be thrown.
 	 * @param assertType - The expected type of the token.
 	 * @param assertSymbol - The expected symbol of the token.
+	 * @param errorMessage - An optional custom error message to fail with if the assert fails.
 	 * @protected
 	 */
-	protected next(assertType: TokenType, assertSymbol: string): Token;
+	protected next(
+		assertType: TokenType,
+		assertSymbol: string,
+		errorMessage?: string
+	): Token;
 
-	protected next(assertType?: TokenType, assertSymbol?: string): Token {
+	protected next(
+		assertType?: TokenType,
+		assertSymbol?: string,
+		errorMessage?: string
+	): Token {
 		if (
 			assertType &&
 			(!this.peekMatches(assertType) ||
 				(assertSymbol && !this.peekMatches(assertType, assertSymbol)))
 		) {
 			throw new JumpSyntaxError(
-				`Expected a '${assertSymbol}' ${assertType} token, but got a '${
-					this.peek()!.symbol
-				}' ${this.peek()!.type} token.`,
+				errorMessage
+					? errorMessage
+					: `Expected a '${assertSymbol}' ${assertType} token, but got a '${
+							this.peek()!.symbol
+					  }' ${this.peek()!.type} token.`,
 				this.position
 			);
 		}
@@ -237,7 +363,7 @@ export default class Parser {
 	 * @param symbol - The symbol to check for.
 	 * @protected
 	 */
-	protected nextIf(type?: TokenType, symbol?: string | string[]) {
+	protected nextIs(type?: TokenType, symbol?: string | string[]) {
 		if (this.peekMatches(type as any, symbol as any)) {
 			this.next(type as any, symbol as any);
 			return true;
@@ -295,5 +421,19 @@ export default class Parser {
 			// symbol is not defined
 			return this.peek()?.type === type;
 		}
+	}
+
+	/**
+	 * Keeps consuming newlines for as long as they exist.
+	 * Returns true if at least one newline was consumed.
+	 * @protected
+	 */
+	protected nextNewlines(): boolean {
+		let consumed = false;
+		while (this.peekMatches(TokenType.CONTROL, "\n")) {
+			consumed = true;
+			this.next();
+		}
+		return consumed;
 	}
 }

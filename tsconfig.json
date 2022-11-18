@@ -1,6 +1,7 @@
 {
 	"files": [
-		"./src/repl.ts"
+		"./src/repl.ts",
+		"./src/jump.ts"
 	],
 	"exclude": [
 		"src/**/*.test.ts"

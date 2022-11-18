@@ -1,0 +1,68 @@
+=== DETAIL VIEW ===
+Lexer: 
+Token<identifier, 'int'>
+Token<identifier, 'x'>
+Token<operator, '='>
+Token<int_literal, '5'>
+Token<control, ';'>
+Token<control, '
+'>
+Token<identifier, 'int'>
+Token<identifier, 'y'>
+Token<operator, '='>
+Token<int_literal, '10'>
+Token<control, ';'>
+Token<control, '
+'>
+Token<identifier, 'print'>
+Token<operator, '('>
+Token<identifier, 'x'>
+Token<operator, '*'>
+Token<int_literal, '2'>
+Token<operator, '+'>
+Token<identifier, 'y'>
+Token<operator, '**'>
+Token<int_literal, '2'>
+Token<operator, ')'>
+Token<control, ';'>
+Token<control, '
+'>
+Token<keyword, 'if'>
+Token<operator, '('>
+Token<boolean_literal, 'true'>
+Token<operator, ')'>
+Token<control, '{'>
+Token<control, '
+'>
+Token<identifier, 'print'>
+Token<operator, '('>
+Token<string_literal, 'True!'>
+Token<operator, ')'>
+Token<control, '
+'>
+Token<control, '}'>
+Parser: 
+Parser failed with error: 
+JumpSyntaxError: Unexpected token 
+
+    at Parser.getBase (/Users/jmeng/Documents/code/jump/src/parser/Parser.ts:261:9)
+    at Parser.getCall (/Users/jmeng/Documents/code/jump/src/parser/Parser.ts:222:21)
+    at Parser.getUnary (/Users/jmeng/Documents/code/jump/src/parser/Parser.ts:218:15)
+    at Parser.getFactor (/Users/jmeng/Documents/code/jump/src/parser/Parser.ts:205:21)
+    at Parser.getTerm (/Users/jmeng/Documents/code/jump/src/parser/Parser.ts:196:19)
+    at Parser.getAddition (/Users/jmeng/Documents/code/jump/src/parser/Parser.ts:186:19)
+    at Parser.getComparison (/Users/jmeng/Documents/code/jump/src/parser/Parser.ts:173:19)
+    at Parser.getEquality (/Users/jmeng/Documents/code/jump/src/parser/Parser.ts:161:19)
+    at Parser.getLogicalOr (/Users/jmeng/Documents/code/jump/src/parser/Parser.ts:148:19)
+    at Parser.getLogicalAnd (/Users/jmeng/Documents/code/jump/src/parser/Parser.ts:135:19) {
+  position: SourcePosition {
+    source: 'int x = 5;\n' +
+      'int y = 10;\n' +
+      'print(x * 2 + y ** 2);\n' +
+      'if (true) {\n' +
+      '    print("True!")\n' +
+      '}',
+    index: 58
+  }
+}
+===================

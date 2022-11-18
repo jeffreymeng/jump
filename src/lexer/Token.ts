@@ -4,6 +4,7 @@ export enum TokenType {
 	STRING_LITERAL = "string_literal",
 	INT_LITERAL = "int_literal",
 	DOUBLE_LITERAL = "double_literal",
+	BOOLEAN_LITERAL = "boolean_literal",
 	OPERATOR = "operator",
 	IDENTIFIER = "identifier",
 	CONTROL = "control",

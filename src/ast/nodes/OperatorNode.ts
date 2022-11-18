@@ -8,7 +8,7 @@ import {
 import SymbolTable from "../SymbolTable";
 import { isCallable } from "../JumpCallable";
 
-export class BinaryOperatorNode extends ASTNode<number> {
+export class BinaryOperatorNode extends ASTNode<number | boolean> {
 	constructor(
 		public readonly left: ASTNode<number>,
 		public readonly operator: Token,
@@ -17,7 +17,7 @@ export class BinaryOperatorNode extends ASTNode<number> {
 		super();
 	}
 
-	public evaluate(symbolTable: SymbolTable): number {
+	public evaluate(symbolTable: SymbolTable): number | boolean {
 		// todo: allow operator overloading, check types
 		// operator overloading would entail moving this operator code into a
 		// class. How do you represent a class in an ast? How do functions work
@@ -41,6 +41,23 @@ export class BinaryOperatorNode extends ASTNode<number> {
 			return left ** right;
 		} else if (this.operator.is(TokenType.OPERATOR, "%")) {
 			return left % right;
+		} else if (this.operator.is(TokenType.OPERATOR, "==")) {
+			// TODO: use our own equality rules for equality (once we have objects for each data type)
+			return left === right;
+		} else if (this.operator.is(TokenType.OPERATOR, "!=")) {
+			return left !== right;
+		} else if (this.operator.is(TokenType.OPERATOR, "&&")) {
+			return left && right;
+		} else if (this.operator.is(TokenType.OPERATOR, "||")) {
+			return left || right;
+		} else if (this.operator.is(TokenType.OPERATOR, "<")) {
+			return left < right;
+		} else if (this.operator.is(TokenType.OPERATOR, "<=")) {
+			return left <= right;
+		} else if (this.operator.is(TokenType.OPERATOR, ">=")) {
+			return left >= right;
+		} else if (this.operator.is(TokenType.OPERATOR, ">")) {
+			return left > right;
 		} else {
 			throw new JumpInternalError(
 				`Unexpected token for BinaryOperatorNode operator. Got ${this.operator.toString()},` +
@@ -52,29 +69,41 @@ export class BinaryOperatorNode extends ASTNode<number> {
 	public toJSON() {
 		return {
 			node: `Binary ${this.operator.symbol}`,
+			left: this.left.toJSON(),
 			right: this.right.toJSON(),
 		};
 	}
 }
 
-export class UnaryOperatorNode extends ASTNode<number> {
+export class UnaryOperatorNode extends ASTNode<number | boolean> {
 	constructor(
 		public readonly operator: Token,
-		public readonly right: ASTNode<number>
+		public readonly right: ASTNode<number | boolean>
 	) {
 		super();
 	}
 
-	public evaluate(symbolTable: SymbolTable): number {
+	public evaluate(symbolTable: SymbolTable): number | boolean {
 		// todo: allow operator overloading, check types
 		if (this.operator.is(TokenType.OPERATOR, "+")) {
 			return this.right.evaluate(symbolTable);
 		} else if (this.operator.is(TokenType.OPERATOR, "-")) {
-			return -1 * this.right.evaluate(symbolTable);
+			const right = this.right.evaluate(symbolTable);
+			if (right === 0) {
+				return right;
+			}
+			if (typeof right !== "number") {
+				throw new JumpTypeError(
+					"'-' operator cannot be used on non-numeric operands."
+				);
+			}
+			return -1 * right;
+		} else if (this.operator.is(TokenType.OPERATOR, "!")) {
+			return !this.right.evaluate(symbolTable);
 		} else {
 			throw new JumpInternalError(
 				`Unexpected token for UnaryOperatorNode operator. Got ${this.operator.toString()},` +
-					` but expected a plus or minus operator.`
+					` but expected one of: +, -, !.`
 			);
 		}
 	}

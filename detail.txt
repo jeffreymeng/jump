@@ -1,0 +1,51 @@
+=== DETAIL VIEW ===
+Lexer: 
+Token<int_literal, '3'>
+Token<operator, '+'>
+Token<int_literal, '1'>
+Token<operator, '<'>
+Token<int_literal, '4'>
+Token<operator, '&&'>
+Token<int_literal, '3'>
+Token<operator, '+'>
+Token<int_literal, '1'>
+Token<operator, '+'>
+Token<int_literal, '4'>
+Token<operator, '>'>
+Token<int_literal, '12'>
+Token<operator, '*'>
+Token<operator, '-'>
+Token<int_literal, '1'>
+Parser: 
+{
+  node: 'Binary +',
+  left: {
+    node: 'Binary +',
+    left: {
+      node: 'Binary +',
+      left: { node: 'Int Literal: 3' },
+      right: {
+        node: 'Binary &&',
+        left: {
+          node: 'Binary <',
+          left: { node: 'Int Literal: 1' },
+          right: { node: 'Int Literal: 4' }
+        },
+        right: { node: 'Int Literal: 3' }
+      }
+    },
+    right: { node: 'Int Literal: 1' }
+  },
+  right: {
+    node: 'Binary >',
+    left: { node: 'Int Literal: 4' },
+    right: {
+      node: 'Binary *',
+      left: { node: 'Int Literal: 12' },
+      right: { node: 'Unary -', right: { node: 'Int Literal: 1' } }
+    }
+  }
+}
+
+
+===================

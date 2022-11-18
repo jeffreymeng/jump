@@ -1,8 +1,8 @@
 Arguments: 
-  /Users/jmeng/.nvm/versions/node/v18.11.0/bin/node /Users/jmeng/.yarn/bin/yarn.js repl
+  /Users/jmeng/.nvm/versions/node/v18.11.0/bin/node /Users/jmeng/.yarn/bin/yarn.js run build
 
 PATH: 
-  /Users/jmeng/.cabal/bin:/Users/jmeng/.ghcup/bin:/Users/jmeng/.yarn/bin:/Users/jmeng/.config/yarn/global/node_modules/.bin:/Users/jmeng/.nvm/versions/node/v18.11.0/bin:/Users/jmeng/.local/bin:/Users/jmeng/bin:/usr/local/bin:/Library/Frameworks/Python.framework/Versions/3.10/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/TeX/texbin:/usr/local/MacGPG2/bin:/Users/jmeng/.cargo/bin:/Users/jmeng/Documents/code/jump/node_modules/.bin
+  /Users/jmeng/.cabal/bin:/Users/jmeng/.ghcup/bin:/Users/jmeng/.yarn/bin:/Users/jmeng/.config/yarn/global/node_modules/.bin:/Users/jmeng/.nvm/versions/node/v18.11.0/bin:/Users/jmeng/.local/bin:/Users/jmeng/bin:/usr/local/bin:/Library/Frameworks/Python.framework/Versions/3.10/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/TeX/texbin:/usr/local/MacGPG2/bin:/Users/jmeng/.cargo/bin
 
 Yarn version: 
   1.22.19
@@ -14,7 +14,7 @@ Platform:
   darwin arm64
 
 Trace: 
-  SyntaxError: /Users/jmeng/Documents/code/jump/package.json: Unexpected token } in JSON at position 261
+  SyntaxError: /Users/jmeng/Documents/code/jump/package.json: Unexpected token } in JSON at position 288
       at JSON.parse (<anonymous>)
       at /Users/jmeng/.yarn/lib/cli.js:1629:59
       at Generator.next (<anonymous>)
@@ -23,7 +23,7 @@ Trace:
 
 npm manifest: 
   {
-  	"name": "sheetsscript",
+  	"name": "jump",
   	"version": "1.0.0",
   	"description": "",
   	"main": "index.js",
@@ -32,19 +32,19 @@ npm manifest:
   		"format": "prettier --write .",
   		"lint": "eslint --ext .jsx --ext .js --ext .ts --ext .tsx --cache .",
   		"repl": "ts-node src/repl.ts",
+  		"build": "tsc -p tsconfig.json",
   	},
   	"repository": {
   		"type": "git",
-  		"url": "git+https://github.com/jeffreymeng/sheets-script.git"
+  		"url": "git+https://github.com/jeffreymeng/jump.git"
   	},
-  	"author": "",
+  	"author": "Jeffrey Meng <jeffkmeng@gmail.com>",
   	"license": "MIT",
   	"bugs": {
-  		"url": "https://github.com/jeffreymeng/sheets-script/issues"
+  		"url": "https://github.com/jeffreymeng/jump/issues"
   	},
-  	"homepage": "https://github.com/jeffreymeng/sheets-script#readme",
+  	"homepage": "https://github.com/jeffreymeng/jump#readme",
   	"dependencies": {
-  
   		"typescript": "^4.8.4"
   	},
   	"devDependencies": {

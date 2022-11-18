@@ -1,0 +1,23 @@
+int x = 0;
+str out = "";
+
+while (x < 15) {
+    x = x + 1;
+    out = "";
+
+    if (x % 3 == 0) {
+        out = out + "Fizz";
+    }
+
+    if (x % 5 == 0) {
+        out = out + "Buzz";
+    }
+
+    if (out == "") {
+        print(x);
+    }
+
+    if (out != "") {
+        print(out);
+    }
+}

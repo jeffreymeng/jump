@@ -19,6 +19,8 @@ describe("Lexer", () => {
 	const semi = () => ctrl(";");
 	const nl = () => ctrl("\n");
 	// lexes the string and returns an array of tokens.
+	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+	// @ts-ignore
 	const lexToArray = (s: string): Token[] => [...new Lexer(new Source(s))];
 	const lexToArrayMatches = (s: string, expected: Token[]): boolean =>
 		lexToArray(s).every((x, i) => x.equals(expected[i]));
@@ -74,7 +76,7 @@ for (i in nums.filter(n => n % 2 == 0)) {
 }\n`;
 
 		const expected = [
-			nl(),
+			// nl(),
 			id("int"),
 			op("["),
 			op("]"),
@@ -86,8 +88,8 @@ for (i in nums.filter(n => n % 2 == 0)) {
 			),
 			op("]"),
 			semi(),
-			nl(),
-			nl(),
+			// nl(),
+			// nl(),
 			kw("for"),
 			op("("),
 			id("i"),
@@ -106,7 +108,7 @@ for (i in nums.filter(n => n % 2 == 0)) {
 			op(")"),
 			op(")"),
 			ctrl("{"),
-			nl(),
+			// nl(),
 			id("print"),
 			op("("),
 			id("i"),
@@ -114,7 +116,7 @@ for (i in nums.filter(n => n % 2 == 0)) {
 			int("2"),
 			op(")"),
 			semi(),
-			nl(),
+			// nl(),
 			ctrl("}"),
 			// the lexer does not pass trailing newlines.
 		].flat();
@@ -138,6 +140,17 @@ for (i in nums.filter(n => n % 2 == 0)) {
 				op(")"),
 			])
 		).toBe(true);
+
+		expect(
+			lexToArrayMatches(`!true`, [
+				op("!"),
+				t(TokenType.BOOLEAN_LITERAL)("true"),
+			])
+		).toBe(true);
+
+		const lex = new Lexer(new Source("true false"))
+		expect(lex.nextToken().is(TokenType.BOOLEAN_LITERAL, "true")).toBe(true);
+		expect(lex.nextToken().is(TokenType.BOOLEAN_LITERAL, "false")).toBe(true);
 	});
 
 	test("Error cases", () => {
