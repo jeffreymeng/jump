@@ -1,11 +1,26 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Source consumeAll 1`] = `"Unexpected end of input."`;
+exports[`Source consumeAll 1`] = `
+"Unexpected end of input.
+	at L1:9"
+`;
 
-exports[`Source consumeUntil 1`] = `"Unexpected end of input."`;
+exports[`Source consumeUntil 1`] = `
+"Unexpected end of input.
+	at L1:9"
+`;
 
-exports[`Source consumeWhile 1`] = `"Unexpected end of input."`;
+exports[`Source consumeWhile 1`] = `
+"Unexpected end of input.
+	at L1:9"
+`;
 
-exports[`Source next & peeking functions 1`] = `"Unexpected end of file"`;
+exports[`Source next & peeking functions 1`] = `
+"Unexpected end of file
+	at L1:5"
+`;
 
-exports[`Source next & peeking functions 2`] = `"Unexpected end of file"`;
+exports[`Source next & peeking functions 2`] = `
+"Unexpected end of file
+	at L1:5"
+`;

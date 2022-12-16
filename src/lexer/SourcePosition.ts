@@ -36,5 +36,9 @@ export default class SourcePosition {
 
 	public toString(): string {
 		return `L${this.getLine()}:${this.getCol()}`;
+		// `(near '${this.source.substring(
+		// 			this.index - 5,
+		// 			this.index + 5
+		// 		)}')`
 	}
 }

@@ -2,9 +2,9 @@ import SourcePosition from "../lexer/SourcePosition";
 import { JumpInternalError } from "../errors";
 
 export enum SCOPE_TYPE {
-	LOOP = "loop",
 	FUNCTION = "function",
 	GLOBAL = "global",
+	BLOCK = "block", // anonymous blocks: if statements and loops
 }
 
 /**
@@ -17,21 +17,23 @@ function reversed<T>(arr: T[]): T[] {
 	return rev;
 }
 
-export default class SymbolTable {
-	protected table: {
-		symbols: Map<
-			string,
-			{
-				type: string;
-				value: any;
-			}
-		>;
-		name: string;
-		type: SCOPE_TYPE;
-		position: SourcePosition;
-	}[] = [
+export type Scope = {
+	symbols: Map<
+		string,
 		{
-			name: "Global",
+			type: string;
+			value: any;
+		}
+	>;
+	name: string;
+	type: SCOPE_TYPE;
+	position: SourcePosition;
+};
+
+export default class SymbolTable {
+	protected table: Scope[] = [
+		{
+			name: "<global>",
 			type: SCOPE_TYPE.GLOBAL,
 			position: new SourcePosition("", 0),
 			symbols: new Map(),
@@ -66,7 +68,22 @@ export default class SymbolTable {
 		if (this.table.length <= 1) {
 			throw new JumpInternalError("Cannot exit the global scope!");
 		}
-		this.table.pop();
+		// console.log("exiting scope with " + JSON.stringify(this.table.map((s) => Object.fromEntries(s.symbols))));
+		const removed = this.table.pop();
+		// console.log("removed " + JSON.stringify(removed?.symbols));
+		// console.log("new table is " + this.table.map((s) => s.symbols));
+	}
+
+	public getScope(): Scope {
+		return this.table[this.table.length - 1];
+	}
+
+	public getScopes(): Scope[] {
+		return this.table;
+	}
+
+	public getReversedScopes(): Scope[] {
+		return reversed(this.table);
 	}
 
 	/**
@@ -85,6 +102,7 @@ export default class SymbolTable {
 	 */
 	public declare(id: string, type: string, value: any): void {
 		if (this.table.at(-1)!.symbols.has(id)) {
+			console.log(this.getScopes().map((s) => s.symbols));
 			throw new JumpInternalError(
 				`Identifier '${id}' has already been declared.`
 			);

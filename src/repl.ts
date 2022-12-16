@@ -5,7 +5,7 @@ import Parser from "./parser/Parser";
 import { promises as fs } from "fs";
 import * as util from "util";
 import SymbolTable from "./ast/SymbolTable";
-import exec from "./parser/tests/exec";
+import execLine from "./parser/tests/execLine";
 import getDetails  from "./jump/getDetail";
 
 async function repl() {
@@ -70,7 +70,7 @@ async function repl() {
 		}
 
 		try {
-			const result = exec(input, symbolTable);
+			const result = execLine(input, symbolTable);
 			if (result !== undefined) {
 				console.log(result);
 			}

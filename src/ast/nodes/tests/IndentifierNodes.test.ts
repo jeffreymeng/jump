@@ -49,7 +49,7 @@ describe("VariableDeclarationNode", () => {
 	});
 
 	test("Declares a variable on the symbol table when evaluated", () => {
-		node.evaluate(new SymbolTable());
+		node.evaluate(new SymbolTable(), {});
 		expect(mockSymbolTable.mock.instances[0].declare).toHaveBeenCalledWith(
 			"foo",
 			"bar",
@@ -73,7 +73,7 @@ describe("VariableDeclarationNode", () => {
 	});
 
 	test("Updates a variable on the symbol table when evaluated", () => {
-		node.evaluate(new SymbolTable());
+		node.evaluate(new SymbolTable(), {});
 		expect(mockSymbolTable.mock.instances[0].update).toHaveBeenCalledWith(
 			"foo",
 			3
@@ -101,8 +101,11 @@ describe("VariableNode", () => {
 	// 			type: "int",
 	// 			value: 10,
 	// 		}),
+	// 		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+	// 		// @ts-ignore
+	// 		has: (id) => true,
 	// 	}));
-	// 	expect(node.evaluate(new SymbolTable())).toBe(10);
+	// 	expect(node.evaluate(new mockSymbolTable(), {})).toBe(10);
 	// 	expect(mockSymbolTable.mock.instances[0].get).toHaveBeenCalledWith(
 	// 		"foo"
 	// 	);

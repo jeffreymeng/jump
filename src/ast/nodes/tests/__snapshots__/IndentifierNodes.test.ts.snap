@@ -2,7 +2,7 @@
 
 exports[`VariableDeclarationNode Creates the same json when toJSON() is called 1`] = `
 {
-  "node": "Declaration: type [object Object], id [object Object]",
+  "node": "Declaration: type bar, id foo",
   "value": {
     "node": "Int Literal: 3",
   },
@@ -11,7 +11,7 @@ exports[`VariableDeclarationNode Creates the same json when toJSON() is called 1
 
 exports[`VariableDeclarationNode Creates the same json when toJSON() is called 2`] = `
 {
-  "node": "Assignment: [object Object]",
+  "node": "Assignment: foo",
   "value": {
     "node": "Int Literal: 3",
   },

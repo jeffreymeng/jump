@@ -1,12 +1,15 @@
 import Token, { TokenType } from "../../lexer/Token";
-import ASTNode from "./ASTNode";
+import ASTNode, { EvaluateOptions } from "./ASTNode";
 import {
 	JumpDivisionByZeroError,
 	JumpInternalError,
+	JumpReturn,
+	JumpSyntaxError,
 	JumpTypeError,
 } from "../../errors";
-import SymbolTable from "../SymbolTable";
+import SymbolTable, { SCOPE_TYPE } from "../SymbolTable";
 import { isCallable } from "../JumpCallable";
+import SourcePosition from "../../lexer/SourcePosition";
 
 export class BinaryOperatorNode extends ASTNode<number | boolean> {
 	constructor(
@@ -17,14 +20,17 @@ export class BinaryOperatorNode extends ASTNode<number | boolean> {
 		super();
 	}
 
-	public evaluate(symbolTable: SymbolTable): number | boolean {
+	public evaluate(
+		symbolTable: SymbolTable,
+		options: EvaluateOptions
+	): number | boolean {
 		// todo: allow operator overloading, check types
 		// operator overloading would entail moving this operator code into a
 		// class. How do you represent a class in an ast? How do functions work
 		// in a symbol table?
 
-		const left = this.left.evaluate(symbolTable);
-		const right = this.right.evaluate(symbolTable);
+		const left = this.left.evaluate(symbolTable, options);
+		const right = this.right.evaluate(symbolTable, options);
 
 		if (this.operator.is(TokenType.OPERATOR, "+")) {
 			return left + right;
@@ -75,7 +81,7 @@ export class BinaryOperatorNode extends ASTNode<number | boolean> {
 	}
 }
 
-export class UnaryOperatorNode extends ASTNode<number | boolean> {
+export class UnaryPrefixOperatorNode extends ASTNode<number | boolean> {
 	constructor(
 		public readonly operator: Token,
 		public readonly right: ASTNode<number | boolean>
@@ -83,12 +89,15 @@ export class UnaryOperatorNode extends ASTNode<number | boolean> {
 		super();
 	}
 
-	public evaluate(symbolTable: SymbolTable): number | boolean {
+	public evaluate(
+		symbolTable: SymbolTable,
+		options: EvaluateOptions
+	): number | boolean {
 		// todo: allow operator overloading, check types
 		if (this.operator.is(TokenType.OPERATOR, "+")) {
-			return this.right.evaluate(symbolTable);
+			return this.right.evaluate(symbolTable, options);
 		} else if (this.operator.is(TokenType.OPERATOR, "-")) {
-			const right = this.right.evaluate(symbolTable);
+			const right = this.right.evaluate(symbolTable, options);
 			if (right === 0) {
 				return right;
 			}
@@ -99,11 +108,15 @@ export class UnaryOperatorNode extends ASTNode<number | boolean> {
 			}
 			return -1 * right;
 		} else if (this.operator.is(TokenType.OPERATOR, "!")) {
-			return !this.right.evaluate(symbolTable);
+			return !this.right.evaluate(symbolTable, options);
+		} else if (this.operator.is(TokenType.OPERATOR, "++")) {
+
+		} else if (this.operator.is(TokenType.OPERATOR, "--")) {
+
 		} else {
 			throw new JumpInternalError(
-				`Unexpected token for UnaryOperatorNode operator. Got ${this.operator.toString()},` +
-					` but expected one of: +, -, !.`
+				`Unexpected token for UnaryPrefixOperatorNode operator. Got ${this.operator.toString()},` +
+					` but expected one of: +, -, !, ++, --.`
 			);
 		}
 	}
@@ -116,6 +129,10 @@ export class UnaryOperatorNode extends ASTNode<number | boolean> {
 	}
 }
 
+export class PrefixIncDecNode extends ASTNode<any> {
+
+}
+
 export class CallNode extends ASTNode<any> {
 	constructor(
 		public readonly callee: ASTNode<any>,
@@ -124,15 +141,16 @@ export class CallNode extends ASTNode<any> {
 		super();
 	}
 
-	public evaluate(symbolTable: SymbolTable) {
+	public evaluate(symbolTable: SymbolTable, options: EvaluateOptions) {
 		if (!isCallable(this.callee)) {
 			throw new JumpTypeError(
-				`Unable to call ${this.callee.evaluate(symbolTable)}`
+				`Unable to call ${this.callee.evaluate(symbolTable, options)}`
 			);
 		}
 		return this.callee.call(
 			symbolTable,
-			this.args.map((arg) => arg.evaluate(symbolTable))
+			options,
+			this.args.map((arg) => arg.evaluate(symbolTable, options))
 		);
 	}
 
@@ -141,6 +159,37 @@ export class CallNode extends ASTNode<any> {
 			node: `Call`,
 			callee: this.callee.toJSON(),
 			args: this.args.map((arg) => arg.toJSON()),
+		};
+	}
+}
+
+export class ReturnOperatorNode extends ASTNode<any> {
+	constructor(
+		public readonly returnValue: ASTNode<any> | null,
+		public readonly position: SourcePosition
+	) {
+		super();
+	}
+
+	public evaluate(symbolTable: SymbolTable, options: EvaluateOptions) {
+		// TODO
+		// maybe symbolTable is renamed into environment?
+		const nearestFunction = symbolTable
+			.getReversedScopes()
+			.find((scope) => scope.type === SCOPE_TYPE.FUNCTION);
+		if (nearestFunction === undefined) {
+			throw new JumpSyntaxError(
+				"Return statement not in a function",
+				this.position
+			);
+		}
+		throw new JumpReturn(this.returnValue?.evaluate(symbolTable, options));
+	}
+
+	public toJSON() {
+		return {
+			node: "Return Operator",
+			returnValue: this.returnValue || null,
 		};
 	}
 }

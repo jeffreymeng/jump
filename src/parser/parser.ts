@@ -3,7 +3,8 @@ import Token, { TokenType } from "../lexer/Token";
 import {
 	BinaryOperatorNode,
 	CallNode,
-	UnaryOperatorNode,
+	ReturnOperatorNode,
+	UnaryPrefixOperatorNode,
 } from "../ast/nodes/OperatorNode";
 import ASTNode from "../ast/nodes/ASTNode";
 import {
@@ -14,19 +15,22 @@ import {
 } from "../ast/nodes/LiteralNodes";
 import SourcePosition from "../lexer/SourcePosition";
 import {
+	FunctionDeclarationNode,
 	Identifier,
 	IdentifierNode,
+	TypedIdentifier,
 	TypeIdentifier,
 	VariableAssignmentNode,
 	VariableDeclarationNode,
 } from "../ast/nodes/IdentifierNodes";
 import { JumpSyntaxError } from "../errors";
 import {
-	CompoundStatementNode,
+	BlockNode,
 	ExpressionNode,
 	IfStatementNode,
-	StatementNode, WhileStatementNode,
+	WhileStatementNode,
 } from "../ast/nodes/StatementNodes";
+import RootNode from "../ast/nodes/RootNode";
 
 const ERROR_MESSAGES = {
 	END_OF_INPUT: "Unexpected end of input.",
@@ -42,11 +46,7 @@ export default class Parser {
 		this.position = lexer.getPosition();
 	}
 
-	public getRoot(): CompoundStatementNode {
-		return this.getCompoundStatements();
-	}
-
-	protected getCompoundStatements(): CompoundStatementNode {
+	public getRoot(): RootNode {
 		const statements = [this.getStatement()];
 
 		while (this.hasNext()) {
@@ -59,25 +59,26 @@ export default class Parser {
 				this.lexer.getPosition()
 			);
 		}
-		return new CompoundStatementNode(statements);
+		return new RootNode(statements);
 	}
 
-	protected getBlock(): CompoundStatementNode {
+	protected getBlock(): BlockNode {
 		this.nextNewlines();
 		this.next(TokenType.CONTROL, "{");
+		const position = this.position;
 		const statements = [];
 
 		while (!this.peekMatches(TokenType.CONTROL, "}")) {
 			statements.push(this.getStatement());
 		}
 
-		const block = new CompoundStatementNode(statements);
+		const block = new BlockNode(statements, position);
 		this.next(TokenType.CONTROL, "}");
 		this.nextNewlines();
 		return block;
 	}
 
-	protected getStatement(): StatementNode | ExpressionNode {
+	protected getStatement(): ASTNode<any> {
 		// match 'int x' or 'x = '
 		let left;
 		if (
@@ -86,6 +87,11 @@ export default class Parser {
 				this.peek(2)?.is(TokenType.OPERATOR, "="))
 		) {
 			left = this.getAssignment();
+
+			// skip the semicolon after a function def
+			if (left instanceof FunctionDeclarationNode) {
+				return left;
+			}
 		} else if (this.peekMatches(TokenType.KEYWORD, ["if", "while"])) {
 			const type = this.next().symbol;
 			this.next(TokenType.OPERATOR, "(");
@@ -94,9 +100,53 @@ export default class Parser {
 			this.nextNewlines();
 
 			if (type === "if") {
-				return new IfStatementNode(condition, this.getBlock());
-			} else {
+				const ifBlock = this.getBlock();
+				const elseBlocks: {
+					condition: ExpressionNode;
+					block: BlockNode;
+				}[] = [];
+				while (this.nextIs(TokenType.KEYWORD, "else")) {
+					if (this.nextIs(TokenType.KEYWORD, "if")) {
+						this.next(TokenType.OPERATOR, "(");
+						const elseCondition = this.getExpression();
+						this.next(TokenType.OPERATOR, ")");
+						elseBlocks.push({
+							condition: elseCondition,
+							block: this.getBlock(),
+						});
+					} else {
+						elseBlocks.push({
+							condition: new ExpressionNode(
+								new BooleanNode("true")
+							),
+							block: this.getBlock(),
+						});
+						break;
+					}
+				}
+				const outerElseBlock = elseBlocks
+					.reverse()
+					.reduce(
+						(
+							prevBlock: undefined | IfStatementNode,
+							{ condition, block }
+						) => new IfStatementNode(condition, block, prevBlock),
+						undefined
+					);
+				return new IfStatementNode(condition, ifBlock, outerElseBlock);
+			} else if (type === "while") {
 				return new WhileStatementNode(condition, this.getBlock());
+			} else {
+				throw new Error("Unexpected control statement type.");
+			}
+		} else if (this.nextIs(TokenType.OPERATOR, "return")) {
+			if (this.nextIs(TokenType.CONTROL, ";")) {
+				left = new ReturnOperatorNode(null, this.position);
+			} else {
+				left = new ReturnOperatorNode(
+					this.getExpression(),
+					this.position
+				);
 			}
 		} else {
 			left = this.getExpression();
@@ -104,7 +154,7 @@ export default class Parser {
 		this.next(
 			TokenType.CONTROL,
 			";",
-			"Expected semicolon after expression."
+			"Expected semicolon after statement."
 		);
 		return left;
 	}
@@ -115,19 +165,52 @@ export default class Parser {
 	 */
 	protected getAssignment():
 		| VariableDeclarationNode
-		| VariableAssignmentNode {
+		| VariableAssignmentNode
+		| FunctionDeclarationNode {
 		const next = this.next(TokenType.IDENTIFIER);
 		if (this.peekMatches(TokenType.IDENTIFIER)) {
 			const type = next;
 			// this is a declaration
 			const identifier = this.next(TokenType.IDENTIFIER);
-			this.next(TokenType.OPERATOR, "=");
-			const expression = this.getExpression();
-			return new VariableDeclarationNode(
-				Identifier.fromToken(identifier),
-				new TypeIdentifier(type.symbol),
-				expression
-			);
+			if (this.nextIs(TokenType.OPERATOR, "=")) {
+				const expression = this.getExpression();
+				return new VariableDeclarationNode(
+					Identifier.fromToken(identifier),
+					new TypeIdentifier(type.symbol),
+					expression
+				);
+			} else if (this.nextIs(TokenType.OPERATOR, "(")) {
+				const params: TypedIdentifier[] = [];
+				if (this.peekMatches(TokenType.IDENTIFIER)) {
+					do {
+						const type = TypeIdentifier.fromToken(
+							this.next(TokenType.IDENTIFIER)
+						);
+						const name = Identifier.fromToken(
+							this.next(TokenType.IDENTIFIER)
+						);
+						params.push({
+							type,
+							name,
+						});
+					} while (this.nextIs(TokenType.OPERATOR, ","));
+				}
+
+				this.next(TokenType.OPERATOR, ")");
+				const block = this.getBlock();
+				return new FunctionDeclarationNode(
+					Identifier.fromToken(identifier),
+					params,
+					TypeIdentifier.fromToken(type),
+					block.statements,
+					block.position
+				);
+			} else {
+				throw new JumpSyntaxError(
+					`Expected '=' or function definition after identifier declaration.`,
+					this.position
+				);
+			}
 		} else {
 			const identifier = next;
 			this.next(TokenType.OPERATOR, "=");
@@ -139,7 +222,6 @@ export default class Parser {
 		}
 	}
 
-	// expression ::= term | term ("+" term)* | term ("-" term)*;
 	protected getExpression(): ExpressionNode {
 		return new ExpressionNode(this.getLogicalAnd());
 	}
@@ -224,11 +306,24 @@ export default class Parser {
 
 	protected getUnary(): ASTNode<any> {
 		if (this.peekMatches(TokenType.OPERATOR, ["+", "-"])) {
-			return new UnaryOperatorNode(this.next(), this.getBase());
+			return new UnaryPrefixOperatorNode(
+				this.next(),
+				this.getIncrementDecrement()
+			);
 		} else if (this.peekMatches(TokenType.OPERATOR, "!")) {
-			return new UnaryOperatorNode(this.next(), this.getUnary());
+			return new UnaryPrefixOperatorNode(this.next(), this.getUnary());
 		}
-		return this.getCall();
+		return this.getIncrementDecrement();
+	}
+
+	protected getIncrementDecrement(): ASTNode<any> {
+		if (this.peekMatches(TokenType.OPERATOR, ["++", "--"])) {
+			return new UnaryPrefixOperatorNode()
+		} else if (
+			this.peek(2)?.is(TokenType.OPERATOR, "++") ||
+			this.peek(2)?.is(TokenType.OPERATOR, "--")
+		)
+			return this.getCall();
 	}
 
 	protected getCall(): ASTNode<any> {
@@ -252,7 +347,7 @@ export default class Parser {
 		return left;
 	}
 
-	// base ::= "(" expression ")" | number;
+	// base ::= "(" expression ")" | literal;
 	protected getBase(): ASTNode<any> {
 		if (this.nextIs(TokenType.OPERATOR, "(")) {
 			const exp = this.getExpression();

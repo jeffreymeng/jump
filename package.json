@@ -23,7 +23,9 @@
 	"homepage": "https://github.com/jeffreymeng/jump#readme",
 	"dependencies": {
 		"@types/command-line-args": "^5.2.0",
+		"@types/dedent": "^0.7.0",
 		"command-line-args": "^5.2.1",
+		"dedent": "^0.7.0",
 		"typescript": "^4.8.4"
 	},
 	"devDependencies": {

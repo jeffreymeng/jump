@@ -25,7 +25,7 @@ async function main() {
 	if (debugpath === null || debugpath === undefined) {
 		new Parser(new Lexer(new Source(fileContents)))
 			.getRoot()
-			.evaluate(symbolTable);
+			.evaluate(symbolTable, {});
 	} else {
 		const details = getDetails(new Source(fileContents));
 		if (debugpath === "") {

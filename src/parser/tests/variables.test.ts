@@ -1,5 +1,5 @@
 import { expect, describe, test } from "@jest/globals";
-import exec from "./exec";
+import execLine from "./execLine";
 import SymbolTable from "../../ast/SymbolTable";
 import { IntNode } from "../../ast/nodes/LiteralNodes";
 import { JumpNameError, JumpSyntaxError } from "../../errors";
@@ -7,8 +7,8 @@ import { JumpNameError, JumpSyntaxError } from "../../errors";
 describe("Variable Declaration", () => {
 	test("Declaration with single constant value", () => {
 		const st = new SymbolTable();
-		exec("int x = 3", st);
-		exec("int y = 9", st);
+		execLine("int x = 3", st);
+		execLine("int y = 9", st);
 
 		expect(st.get("x")).toStrictEqual({
 			type: "int",
@@ -23,35 +23,35 @@ describe("Variable Declaration", () => {
 
 	test("Reassigning values to declared variables", () => {
 		const st = new SymbolTable();
-		exec("int x = 3", st);
-		exec("x = 5", st);
+		execLine("int x = 3", st);
+		execLine("x = 5", st);
 
 		expect(st.get("x").value).toBe(5);
 
-		exec("x = x + 1", st);
+		execLine("x = x + 1", st);
 		expect(st.get("x").value).toBe(6);
 
-		exec("x = x + 1", st);
+		execLine("x = x + 1", st);
 		expect(st.get("x").value).toBe(7);
 	});
 
 	test("Expressions with variables", () => {
 		const st = new SymbolTable();
-		exec("int x = 3", st);
-		exec("int y = 9", st);
+		execLine("int x = 3", st);
+		execLine("int y = 9", st);
 
-		expect(exec("x", st)).toBe(3);
-		expect(exec("y", st)).toBe(9);
-		expect(exec("x + 3", st)).toBe(6);
-		expect(exec("x + y * 3", st)).toBe(30);
+		expect(execLine("x", st)).toBe(3);
+		expect(execLine("y", st)).toBe(9);
+		expect(execLine("x + 3", st)).toBe(6);
+		expect(execLine("x + y * 3", st)).toBe(30);
 	});
 
 	test("Relying on undeclared variables throws a NameError", () => {
 		const st = new SymbolTable();
-		expect(() => exec("x", st)).toThrowError(JumpNameError);
+		expect(() => execLine("x", st)).toThrowError(JumpNameError);
 
-		exec("int x = 3", st);
-		expect(exec("x", st)).toBe(3);
-		expect(() => exec("3 + y", st)).toThrowError(JumpNameError);
+		execLine("int x = 3", st);
+		expect(execLine("x", st)).toBe(3);
+		expect(() => execLine("3 + y", st)).toThrowError(JumpNameError);
 	})
 });

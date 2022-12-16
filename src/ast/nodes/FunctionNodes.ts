@@ -1,4 +1,4 @@
-import ASTNode from "./ASTNode";
+import ASTNode, { EvaluateOptions } from "./ASTNode";
 import JumpCallable from "../JumpCallable";
 import SymbolTable from "../SymbolTable";
 import {
@@ -7,34 +7,47 @@ import {
 	JumpTypeError,
 } from "../../errors";
 
-export const BUILT_IN_FUNCTIONS = ["print", "max", "min", "prompt"] as const;
+export const BUILT_IN_FUNCTIONS = [
+	"print",
+	"max",
+	"min",
+	"prompt",
+	"time",
+] as const;
 export type BuiltInFunctionName = typeof BUILT_IN_FUNCTIONS[number];
 
 export class BuiltInFunctionNode
 	extends ASTNode<string>
 	implements JumpCallable
 {
-	constructor(public readonly fn: BuiltInFunctionName) {
+	constructor(public readonly name: BuiltInFunctionName) {
 		super();
 	}
 
-	public evaluate(symbolTable: SymbolTable): string {
+	public evaluate(
+		symbolTable: SymbolTable,
+		options: EvaluateOptions
+	): string {
 		// TODO
-		return `function ${this.fn}() { [native code] }`;
+		return `function ${this.name}() { [native code] }`;
 	}
 
 	public toJSON(): Record<string, any> {
 		return {
-			node: `Built in function: ${this.fn}`,
+			node: `Built in function: ${this.name}`,
 		};
 	}
 
 	// TODO: change args to a JumpValue or something that all expressions evaluate to instead of js primitives
 	// (so classes could also be a JumpValue)
-	public call(symbolTable: SymbolTable, args: any): any {
-		if (this.fn === "print") {
-			console.log(...args);
-		} else if (this.fn === "max") {
+	public call(
+		symbolTable: SymbolTable,
+		options: EvaluateOptions,
+		args: any
+	): any {
+		if (this.name === "print") {
+			(options.stdout || console.log)(...args);
+		} else if (this.name === "max") {
 			args.forEach((v: any) => {
 				if (typeof v !== "number") {
 					throw new JumpTypeError(
@@ -43,7 +56,7 @@ export class BuiltInFunctionNode
 				}
 			});
 			return Math.max(...args);
-		} else if (this.fn === "min") {
+		} else if (this.name === "min") {
 			args.forEach((v: any) => {
 				if (typeof v !== "number") {
 					throw new JumpTypeError(
@@ -52,9 +65,11 @@ export class BuiltInFunctionNode
 				}
 			});
 			return Math.min(...args);
+		} else if (this.name === "time") {
+			return Date.now();
 		} else {
 			throw new JumpInternalError(
-				`Unknown BuiltInFunctionNode function type: ${this.fn}`
+				`Unknown BuiltInFunctionNode function type: ${this.name}`
 			);
 		}
 	}

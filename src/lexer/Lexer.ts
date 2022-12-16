@@ -29,7 +29,9 @@ export default class Lexer implements IterableIterator<Token> {
 	public static readonly UPPERCASE_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 	// TODO: this might be more optimized with a trie
-	public static readonly KEYWORDS = ["for", "in", "if", "while"];
+	public static readonly KEYWORDS = ["for", "in", "if", "else", "while"];
+
+	public static readonly OPERATOR_KEYWORDS = ["break", "continue", "return"];
 
 	/**
 	 * Returns a new lexer on the same source text but with any internal state reset.
@@ -45,6 +47,15 @@ export default class Lexer implements IterableIterator<Token> {
 		const source = this.source;
 		const c = source.next();
 		this.setTokenIndex();
+		// TODO: fix issue with comments & done
+		// potentially by editing the done function to see if nextToken
+		// returns anything (or if c is "" then exit immediately)
+		// if (c === "/") {
+		// 	// two slashes == comment
+		// 	if (source.peekNext() === "/") {
+		// 		source.consumeUntil("\n")
+		// 	}
+		// }
 
 		if ("\"'".includes(c)) {
 			// consume until we see the same type of quote again
@@ -139,6 +150,9 @@ export default class Lexer implements IterableIterator<Token> {
 			}
 			if (Lexer.KEYWORDS.includes(buffer)) {
 				return this.createToken(TokenType.KEYWORD, buffer);
+			}
+			if (Lexer.OPERATOR_KEYWORDS.includes(buffer)) {
+				return this.createToken(TokenType.OPERATOR, buffer);
 			}
 			return this.createToken(TokenType.IDENTIFIER, buffer);
 		}

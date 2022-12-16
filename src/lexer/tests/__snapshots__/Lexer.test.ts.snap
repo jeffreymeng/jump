@@ -1,7 +1,16 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Lexer Literals 1`] = `"Expected string to be closed."`;
+exports[`Lexer Literals 1`] = `
+"Expected string to be closed.
+	at L1:7"
+`;
 
-exports[`Lexer Literals 2`] = `"Expected string to be closed."`;
+exports[`Lexer Literals 2`] = `
+"Expected string to be closed.
+	at L1:1"
+`;
 
-exports[`Lexer Literals 3`] = `"Expected string to be closed."`;
+exports[`Lexer Literals 3`] = `
+"Expected string to be closed.
+	at L1:4"
+`;

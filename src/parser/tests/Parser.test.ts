@@ -1,6 +1,6 @@
 import { describe, expect, test } from "@jest/globals";
 import { JumpSyntaxError } from "../../errors";
-import exec from "./exec";
+import execLine from "./execLine";
 import Parser from "../Parser";
 import Lexer from "../../lexer/Lexer";
 import Source from "../../lexer/Source";
@@ -86,15 +86,15 @@ describe("Internal next/peek/peekMatches", () => {
 
 describe("Parser Errors", () => {
 	test("Syntax errors", () => {
-		expect(() => exec("2 %")).toThrowError(JumpSyntaxError);
-		expect(() => exec("1 + 3 +")).toThrowError(JumpSyntaxError);
-		expect(() => exec("1 + 3 3")).toThrowError(JumpSyntaxError);
-		expect(() => exec("1 1")).toThrowError(JumpSyntaxError);
-		expect(() => exec("1 + 3 ^")).toThrowError(JumpSyntaxError);
-		expect(() => exec("(")).toThrowError(JumpSyntaxError);
-		expect(() => exec("(()")).toThrowError(JumpSyntaxError);
-		expect(() => exec("(()")).toThrowError(JumpSyntaxError);
-		expect(() => exec("😎")).toThrowError(JumpSyntaxError);
-		expect(() => exec("")).toThrowError(JumpSyntaxError);
+		expect(() => execLine("2 %")).toThrowError(JumpSyntaxError);
+		expect(() => execLine("1 + 3 +")).toThrowError(JumpSyntaxError);
+		expect(() => execLine("1 + 3 3")).toThrowError(JumpSyntaxError);
+		expect(() => execLine("1 1")).toThrowError(JumpSyntaxError);
+		expect(() => execLine("1 + 3 ^")).toThrowError(JumpSyntaxError);
+		expect(() => execLine("(")).toThrowError(JumpSyntaxError);
+		expect(() => execLine("(()")).toThrowError(JumpSyntaxError);
+		expect(() => execLine("(()")).toThrowError(JumpSyntaxError);
+		expect(() => execLine("😎")).toThrowError(JumpSyntaxError);
+		expect(() => execLine("")).toThrowError(JumpSyntaxError);
 	});
 });
