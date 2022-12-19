@@ -46,7 +46,7 @@ export class BuiltInFunctionNode
 		args: any
 	): any {
 		if (this.name === "print") {
-			(options.stdout || console.log)(...args);
+			(options.stdout || console.log)(args.join(" "));
 		} else if (this.name === "max") {
 			args.forEach((v: any) => {
 				if (typeof v !== "number") {

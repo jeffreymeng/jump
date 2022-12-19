@@ -110,9 +110,11 @@ export class UnaryPrefixOperatorNode extends ASTNode<number | boolean> {
 		} else if (this.operator.is(TokenType.OPERATOR, "!")) {
 			return !this.right.evaluate(symbolTable, options);
 		} else if (this.operator.is(TokenType.OPERATOR, "++")) {
-
+			// TODO
+			return 12345;
 		} else if (this.operator.is(TokenType.OPERATOR, "--")) {
-
+			// TODO
+			return 12345;
 		} else {
 			throw new JumpInternalError(
 				`Unexpected token for UnaryPrefixOperatorNode operator. Got ${this.operator.toString()},` +
@@ -129,9 +131,6 @@ export class UnaryPrefixOperatorNode extends ASTNode<number | boolean> {
 	}
 }
 
-export class PrefixIncDecNode extends ASTNode<any> {
-
-}
 
 export class CallNode extends ASTNode<any> {
 	constructor(

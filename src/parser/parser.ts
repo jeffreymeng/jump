@@ -318,12 +318,18 @@ export default class Parser {
 
 	protected getIncrementDecrement(): ASTNode<any> {
 		if (this.peekMatches(TokenType.OPERATOR, ["++", "--"])) {
-			return new UnaryPrefixOperatorNode()
+			return new UnaryPrefixOperatorNode(
+				this.next(TokenType.OPERATOR),
+				this.getCall()
+			);
 		} else if (
 			this.peek(2)?.is(TokenType.OPERATOR, "++") ||
 			this.peek(2)?.is(TokenType.OPERATOR, "--")
-		)
+		) {
+			//TODO
 			return this.getCall();
+		}
+		return this.getCall();
 	}
 
 	protected getCall(): ASTNode<any> {

@@ -8,7 +8,11 @@ export default class RootNode extends ASTNode<any> {
 	}
 
 	evaluate(symbolTable: SymbolTable, options: EvaluateOptions): void {
-		this.statements.forEach((s) => s.evaluate(symbolTable, options));
+		if (this.statements.length === 1) {
+			return this.statements[0].evaluate(symbolTable, options);
+		} else {
+			this.statements.forEach((s) => s.evaluate(symbolTable, options));
+		}
 	}
 
 	public toJSON() {

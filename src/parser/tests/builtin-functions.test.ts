@@ -7,38 +7,26 @@ import {
 	afterAll,
 } from "@jest/globals";
 import { MockInstance } from "jest-mock";
-import execLine from "./execLine";
+import execLine, { execOutput } from "./execLine";
 import SymbolTable from "../../ast/SymbolTable";
 import { JumpTypeError } from "../../errors";
 
 describe("Built in functions", () => {
-	let logSpy: MockInstance;
-	beforeAll(() => {
-		logSpy = jest.spyOn(console, "log").mockImplementation(() => {
-			/* noop */
-		});
-	});
-
 	test("print() with no arguments calls native print() with no arguments", () => {
-		expect(execLine(`print()`)).toBe(undefined);
-		expect(logSpy.mock.calls[0].length).toBe(0);
+		expect(execOutput(`print();`)).toStrictEqual([""]);
 	});
 	test("print() works with constant values", () => {
-		expect(execLine(`print(3)`)).toBe(undefined);
-		expect(execLine(`print(39)`)).toBe(undefined);
-		expect(execLine(`print(8, 10, 482)`)).toBe(undefined);
-		expect(logSpy).toHaveBeenNthCalledWith(1, 3);
-		expect(logSpy).toHaveBeenNthCalledWith(2, 39);
-		expect(logSpy).toHaveBeenNthCalledWith(3, 8, 10, 482);
+		expect(execOutput(`print(3);`)).toStrictEqual(["3"]);
+		expect(execOutput(`print(39);`)).toStrictEqual(["39"]);
+		expect(execOutput(`print(8, 10, 482);`)).toStrictEqual(["8 10 482"]);
 	});
 
 	test("print() works with expressions", () => {
-		expect(execLine(`print(3 + 9)`)).toBe(undefined);
-		expect(execLine(`print(3 ** 2 + 1)`)).toBe(undefined);
-		expect(execLine(`print(2, 3 * 7, (5 + 8) * 2)`)).toBe(undefined);
-		expect(logSpy).toHaveBeenNthCalledWith(1, 12);
-		expect(logSpy).toHaveBeenNthCalledWith(2, 10);
-		expect(logSpy).toHaveBeenNthCalledWith(3, 2, 21, 26);
+		expect(execOutput(`print(3 + 9);`)).toStrictEqual(["12"]);
+		expect(execOutput(`print(3 ** 2 + 1);`)).toStrictEqual(["10"]);
+		expect(execOutput(`print(2, 3 * 7, (5 + 8) * 2);`)).toStrictEqual([
+			"2 21 26",
+		]);
 	});
 
 	test("min() and max() work with constant values", () => {
@@ -89,9 +77,5 @@ describe("Built in functions", () => {
 
 		expect(() => execLine(`min(19, "foo")`)).toThrowError(JumpTypeError);
 		expect(() => execLine(`max(19, "foo")`)).toThrowError(JumpTypeError);
-	});
-
-	afterAll(() => {
-		logSpy.mockRestore();
 	});
 });
