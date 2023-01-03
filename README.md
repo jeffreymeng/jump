@@ -3,7 +3,7 @@
 A strongly-typed programming language designed for writing high-quality code quickly.
 
 Note: Jump is a work-in-progress toy programming language. It takes a lot of inspiration
-from typescript (the good parts) and a bit of python (the parts that I can bear).
+from typescript (the good parts) and a bit of python (the parts that I can bear). It's currently an interpreter, but I will be writing a compiler later.
 
 ### Syntax Examples
 
