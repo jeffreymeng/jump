@@ -1,9 +1,10 @@
 # Jump
 
-A strongly-typed programming language designed for writing high-quality code quickly.
+Jump is a toy programming language and compiler that I'm working on to explore interesting language concepts. It takes a lot of inspiration
+from typescript and python.
 
-Note: Jump is a work-in-progress toy programming language. It takes a lot of inspiration
-from typescript (the good parts) and a bit of python (the parts that I can bear). It's currently an interpreter, but I will be writing a compiler later.
+It's designed to be a strongly-typed programming language that allows you to write high-quality code quickly.
+
 
 ### Syntax Examples
 
@@ -35,7 +36,7 @@ print(pets.sort(by="age", order="asc"))
 // keyword arguments are defined by a prepended equal sign. Positional args must be
 // positional args, and keyword args must be keyword args. You can specify a default value
 // for args.
-void add(int x, int y = 0, {int base = 10}) {
+void add(x: int, y: int = 0, {base: int = 10}) {
 	// convert bases
     return x + y;
 }
@@ -45,10 +46,9 @@ void add(int x, int y = 0, {int base = 10}) {
 
 ### Todo
 
--   Stage 1
 -   A variable cannot be updated if it is declared later in the same scope, even if it is also declared in an outer scope.
 
-### Future features being considered
+### Features I'm thinking about
 
 -   Pipe operator (.>) e.g. `arr.filter().>mycustomfunction(#)`
     -   If the # is present, it will be replaced with the previous value (this can be done multiple times)
