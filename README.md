@@ -7,9 +7,6 @@ It's designed to be a strongly-typed programming language that allows you to wri
 
 
 ### Syntax Examples
-
-#### Stage 1
-
 ```typescript
 
 int[] nums = [1, 2, 3, 4, 5, 9];
