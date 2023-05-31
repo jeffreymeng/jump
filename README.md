@@ -33,7 +33,7 @@ print(pets.sort(by="age", order="asc"))
 // keyword arguments are defined by a prepended equal sign. Positional args must be
 // positional args, and keyword args must be keyword args. You can specify a default value
 // for args.
-void add(x: int, y: int = 0, {base: int = 10}) {
+function add(x: int, y: int = 0, {base: int = 10}) {
 	// convert bases
     return x + y;
 }
